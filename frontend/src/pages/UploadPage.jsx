@@ -3,11 +3,13 @@ import { useAppDispatch } from "../context/AppContext";
 import { uploadPapers as uploadApi } from "../api/uploads";
 import FileUploader from "../components/FileUploader";
 import PaperCard from "../components/PaperCard";
+import SummarizeModal from "../components/SummarizeModal";
 
 export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadedPapers, setUploadedPapers] = useState([]);
   const [error, setError] = useState(null);
+  const [summarizeTarget, setSummarizeTarget] = useState(null);
   const dispatch = useAppDispatch();
 
   const handleUpload = useCallback(
@@ -46,10 +48,25 @@ export default function UploadPage() {
           </h3>
           <div className="space-y-3">
             {uploadedPapers.map((p) => (
-              <PaperCard key={p.id} paper={p} />
+              <PaperCard
+                key={p.id}
+                paper={p}
+                onSummarize={(id, title) => setSummarizeTarget({ id, title })}
+                onDelete={(id) => {
+                  setUploadedPapers((prev) => prev.filter((pp) => pp.id !== id));
+                }}
+              />
             ))}
           </div>
         </div>
+      )}
+
+      {summarizeTarget && (
+        <SummarizeModal
+          paperId={summarizeTarget.id}
+          paperTitle={summarizeTarget.title}
+          onClose={() => setSummarizeTarget(null)}
+        />
       )}
     </div>
   );

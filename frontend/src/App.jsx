@@ -3,6 +3,7 @@ import { AppProvider } from "./context/AppContext";
 import AppLayout from "./layouts/AppLayout";
 import UploadPage from "./pages/UploadPage";
 import ChatPage from "./pages/ChatPage";
+import ComparePage from "./pages/ComparePage";
 import HistoryPage from "./pages/HistoryPage";
 import DashboardPage from "./pages/DashboardPage";
 
@@ -13,6 +14,7 @@ export default function App() {
         <Route element={<AppLayout />}>
           <Route index element={<UploadPage />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="compare" element={<ComparePage />} />
           <Route path="history" element={<HistoryPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
         </Route>

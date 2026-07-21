@@ -30,14 +30,24 @@ export default function PaperCard({ paper, onDelete }) {
           ))}
         </div>
       )}
-      {onDelete && (
-        <button
-          onClick={() => onDelete(paper.id)}
-          className="mt-3 text-xs text-red-600 hover:text-red-800 transition-colors"
-        >
-          Delete
-        </button>
-      )}
+      <div className="flex gap-3 mt-3">
+        {paper.status === "processed" && onSummarize && (
+          <button
+            onClick={() => onSummarize(paper.id, paper.title)}
+            className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            Summarize
+          </button>
+        )}
+        {onDelete && (
+          <button
+            onClick={() => onDelete(paper.id)}
+            className="text-xs text-red-600 hover:text-red-800 transition-colors"
+          >
+            Delete
+          </button>
+        )}
+      </div>
     </div>
   );
 }
