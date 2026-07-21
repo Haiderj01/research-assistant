@@ -1,3 +1,4 @@
+import os
 from pymongo import MongoClient, ASCENDING, DESCENDING, TEXT
 from pymongo.errors import ConnectionFailure
 from backend.config.settings import settings
@@ -32,9 +33,13 @@ class DatabaseService:
         except ConnectionFailure:
             logger.warning("MongoDB connection failed — falling back to in-memory mock database")
             import mongomock
+            import shutil
             cls._client = mongomock.MongoClient()
             cls._db = cls._client["research_assistant"]
             cls._ensure_indexes()
+            if os.path.exists(settings.VECTOR_STORE_PATH):
+                shutil.rmtree(settings.VECTOR_STORE_PATH)
+                logger.info("Cleared stale vector store to stay in sync with in-memory database")
             return True
 
     @classmethod

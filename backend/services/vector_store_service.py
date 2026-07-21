@@ -203,6 +203,7 @@ class VectorStoreService:
         logger.info(f"Created new vector store (dim={dim})")
 
     def _save(self):
+        os.makedirs(os.path.dirname(self._index_path), exist_ok=True)
         faiss.write_index(self._index, self._index_path)
         with open(self._mapping_path, "w") as f:
             json.dump(self._id_to_chunk, f)

@@ -74,6 +74,7 @@ def answer_query(
         if chunk:
             source_chunks.append({
                 "chunk_id": cid,
+                "chunk_mongo_id": str(chunk["_id"]),
                 "text": chunk["chunk_text"],
                 "paper_id": str(chunk["paper_id"]),
                 "page_number": chunk.get("page_number"),
@@ -111,12 +112,12 @@ def answer_query(
             conversation_id=conversation_id,
             question_text=question,
             answer_text=generated_answer,
-            source_chunk_ids=[s["chunk_id"] for s in source_chunks],
+            source_chunk_ids=[s["chunk_mongo_id"] for s in source_chunks],
         )
         search_history_model.create_search_entry(
             query_text=question,
             paper_ids=paper_ids,
-            result_chunk_ids=[s["chunk_id"] for s in source_chunks],
+            result_chunk_ids=[s["chunk_mongo_id"] for s in source_chunks],
         )
 
     logger.info(f"RAG answer generated ({len(source_chunks)} sources, {len(context)} chars)")
