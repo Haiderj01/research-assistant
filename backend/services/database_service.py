@@ -30,10 +30,12 @@ class DatabaseService:
             logger.info("Connected to MongoDB")
             return True
         except ConnectionFailure:
-            logger.warning("MongoDB connection failed — running without database")
-            cls._client = None
-            cls._db = None
-            return False
+            logger.warning("MongoDB connection failed — falling back to in-memory mock database")
+            import mongomock
+            cls._client = mongomock.MongoClient()
+            cls._db = cls._client["research_assistant"]
+            cls._ensure_indexes()
+            return True
 
     @classmethod
     def get_db(cls):

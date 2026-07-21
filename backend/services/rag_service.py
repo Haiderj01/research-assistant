@@ -63,9 +63,9 @@ def answer_query(
             "conversation_id": conversation_id or "",
         }
 
-    chunk_ids = [r["chunk_id"] for r in results]
-    chunks = chunk_model.get_chunks_by_ids(chunk_ids)
-    chunks_by_id = {str(c["_id"]): c for c in (chunks or [])}
+    vector_ids = [r["chunk_id"] for r in results]
+    chunks = chunk_model.get_chunks_by_vector_ids(vector_ids)
+    chunks_by_id = {c["vector_id"]: c for c in (chunks or [])}
 
     source_chunks = []
     for r in results:

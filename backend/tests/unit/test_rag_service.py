@@ -19,10 +19,10 @@ def mock_deps():
         mock_gemini.answer_question.return_value = "This is the generated answer."
         mock_conv.create_conversation.return_value = {"_id": "conv_123"}
         mock_conv.update_conversation.return_value = True
-        mock_chunks.get_chunks_by_ids.return_value = [
-            {"_id": "chunk_1", "chunk_text": "Paper content about machine learning.",
+        mock_chunks.get_chunks_by_vector_ids.return_value = [
+            {"_id": "oid_1", "vector_id": "chunk_1", "chunk_text": "Paper content about machine learning.",
              "paper_id": "paper_1", "page_number": 1},
-            {"_id": "chunk_2", "chunk_text": "More paper content here.",
+            {"_id": "oid_2", "vector_id": "chunk_2", "chunk_text": "More paper content here.",
              "paper_id": "paper_1", "page_number": 2},
         ]
         mock_vs.search.return_value = [
@@ -65,7 +65,7 @@ class TestAnswerQuery:
         mock_deps["vector_store"].search.return_value = [
             {"chunk_id": "nonexistent", "score": 0.5, "position": 0},
         ]
-        mock_deps["chunks"].get_chunks_by_ids.return_value = []
+        mock_deps["chunks"].get_chunks_by_vector_ids.return_value = []
         result = answer_query(
             question="Any content?",
             paper_ids=["paper_1"],

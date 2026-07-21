@@ -49,6 +49,13 @@ def get_chunks_by_ids(chunk_ids: list[str]) -> list[dict]:
     return list(coll.find({"_id": {"$in": oids}}))
 
 
+def get_chunks_by_vector_ids(vector_ids: list[str]) -> list[dict]:
+    coll = DatabaseService.get_collection("chunks")
+    if coll is None:
+        return []
+    return list(coll.find({"vector_id": {"$in": vector_ids}}))
+
+
 def get_chunk_by_vector_id(vector_id: str) -> dict:
     coll = DatabaseService.get_collection("chunks")
     if coll is None:
