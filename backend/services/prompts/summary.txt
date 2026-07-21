@@ -1,0 +1,14 @@
+=== PAPER CONTENT ===
+
+{context}
+
+=== INSTRUCTIONS ===
+
+Generate a concise, structured summary of this research paper based solely on the content above. Organize the summary into the following sections:
+
+1. Problem / Motivation — What problem does the paper address?
+2. Method / Approach — What method or approach is proposed?
+3. Key Results — What are the main findings or results?
+4. Conclusion — What conclusions do the authors draw?
+
+Keep each section brief (2-4 sentences). If a section cannot be determined from the provided content, state that explicitly.
