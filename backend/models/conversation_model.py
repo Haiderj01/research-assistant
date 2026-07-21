@@ -43,3 +43,15 @@ def update_conversation(conversation_id: str) -> bool:
         {"$set": {"updated_at": datetime.now(timezone.utc)}},
     )
     return result.modified_count > 0
+
+
+def update_conversation_title(conversation_id: str, title: str) -> bool:
+    coll = DatabaseService.get_collection("conversations")
+    if coll is None:
+        return False
+    now = datetime.now(timezone.utc)
+    result = coll.update_one(
+        {"_id": ObjectId(conversation_id)},
+        {"$set": {"title": title, "updated_at": now}},
+    )
+    return result.modified_count > 0

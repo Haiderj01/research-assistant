@@ -103,7 +103,8 @@ def answer_query(
     if conversation_id:
         conversation_model.update_conversation(conversation_id)
     else:
-        conv = conversation_model.create_conversation(paper_ids=paper_ids)
+        conv_title = question[:80] + ("…" if len(question) > 80 else "")
+        conv = conversation_model.create_conversation(paper_ids=paper_ids, title=conv_title)
         conversation_id = str(conv["_id"]) if conv else ""
     logger.debug(f"Using conversation_id={conversation_id}")
 
