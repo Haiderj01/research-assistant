@@ -2,6 +2,12 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from backend.config.settings import settings
 from backend.middlewares.error_handler import register_error_handlers
+from backend.routes.upload_routes import upload_bp
+from backend.routes.query_routes import query_bp
+from backend.routes.paper_routes import paper_bp
+from backend.routes.history_routes import history_bp
+from backend.routes.summary_routes import summary_bp
+from backend.routes.comparison_routes import comparison_bp
 from backend.utils.logger import logger
 
 
@@ -24,6 +30,13 @@ def create_app() -> Flask:
                 "vector_store": "unchecked",
             },
         }), 200
+
+    app.register_blueprint(upload_bp)
+    app.register_blueprint(query_bp)
+    app.register_blueprint(paper_bp)
+    app.register_blueprint(history_bp)
+    app.register_blueprint(summary_bp)
+    app.register_blueprint(comparison_bp)
 
     return app
 
