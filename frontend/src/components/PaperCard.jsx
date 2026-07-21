@@ -1,11 +1,11 @@
-export default function PaperCard({ paper, onDelete }) {
+export default function PaperCard({ paper, onDelete, onSummarize }) {
   return (
     <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm hover:shadow transition-shadow">
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-gray-900 truncate">{paper.title}</h3>
           <p className="text-xs text-gray-500 mt-1">
-            {paper.page_count} page{paper.page_count !== 1 ? "s" : ""} &middot;{" "}
+            {(paper.page_count ?? 0)} page{(paper.page_count ?? 0) !== 1 ? "s" : ""} &middot;{" "}
             {new Date(paper.upload_date).toLocaleDateString()}
           </p>
         </div>
