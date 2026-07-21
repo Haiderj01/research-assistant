@@ -15,5 +15,5 @@ build/
 venv/
 .venv/
 *.log
-backend/config/
+
 

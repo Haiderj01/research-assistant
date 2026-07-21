@@ -5,7 +5,7 @@ load_dotenv()
 
 
 class Settings:
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "PLACEHOLDER_REMOVED")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY")
     UPLOAD_DIRECTORY: str = os.getenv("UPLOAD_DIRECTORY", "backend/uploads")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "mongodb://localhost:27017/research_assistant")
     VECTOR_STORE_PATH: str = os.getenv("VECTOR_STORE_PATH", "backend/vector_store")
