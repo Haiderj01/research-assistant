@@ -6,12 +6,19 @@ load_dotenv()
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def _resolve_path(env_key: str, default: str) -> str:
+    val = os.getenv(env_key, default)
+    if val.startswith("backend/"):
+        val = val[len("backend/"):]
+    return os.path.join(_BASE_DIR, val)
+
+
 class Settings:
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY")
     GEMINI_MODEL_NAME: str = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
-    UPLOAD_DIRECTORY: str = os.path.join(_BASE_DIR, os.getenv("UPLOAD_DIRECTORY", "uploads"))
+    UPLOAD_DIRECTORY: str = _resolve_path("UPLOAD_DIRECTORY", "uploads")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "mongodb://localhost:27017/research_assistant")
-    VECTOR_STORE_PATH: str = os.path.join(_BASE_DIR, os.getenv("VECTOR_STORE_PATH", "vector_store"))
+    VECTOR_STORE_PATH: str = _resolve_path("VECTOR_STORE_PATH", "vector_store")
     APPLICATION_PORT: int = int(os.getenv("APPLICATION_PORT", "5003"))
     DEBUG_MODE: bool = os.getenv("DEBUG_MODE", "false").lower() == "true"
     LOGGING_LEVEL: str = os.getenv("LOGGING_LEVEL", "INFO").upper()
