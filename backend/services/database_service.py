@@ -59,6 +59,11 @@ class DatabaseService:
 
     @classmethod
     def is_connected(cls) -> bool:
+        if cls._db is None:
+            try:
+                cls.connect()
+            except Exception:
+                return False
         return cls._db is not None
 
     @classmethod
