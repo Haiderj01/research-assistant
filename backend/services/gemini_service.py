@@ -42,8 +42,9 @@ def _generate(prompt: str, system_instruction: str = None) -> str:
         return response.text.strip()
     except Exception as e:
         logger.exception("Gemini API call failed")
+        msg = str(e) if settings.DEBUG_MODE else "The AI generation service is temporarily unavailable. Please try again."
         raise AppError(
-            message="The AI generation service is temporarily unavailable. Please try again.",
+            message=msg,
             status_code=502,
             code="GEMINI_ERROR",
         )
