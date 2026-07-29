@@ -1,4 +1,6 @@
 import os
+import re
+import time
 from google import genai
 from google.genai import types
 from backend.config.settings import settings
@@ -24,6 +26,11 @@ def _get_client() -> genai.Client:
     return genai.Client(api_key=settings.GEMINI_API_KEY)
 
 
+def _extract_retry_delay(error_msg: str) -> float:
+    match = re.search(r"retry in ([\d.]+)s", error_msg)
+    return float(match.group(1)) if match else 0
+
+
 def _generate(prompt: str, system_instruction: str = None) -> str:
     client = _get_client()
     config = types.GenerateContentConfig(
@@ -33,21 +40,32 @@ def _generate(prompt: str, system_instruction: str = None) -> str:
     if system_instruction:
         config.system_instruction = system_instruction
 
-    try:
-        response = client.models.generate_content(
-            model=settings.GEMINI_MODEL_NAME,
-            contents=prompt,
-            config=config,
-        )
-        return response.text.strip()
-    except Exception as e:
-        logger.exception("Gemini API call failed")
-        msg = str(e) if settings.DEBUG_MODE else "The AI generation service is temporarily unavailable. Please try again."
-        raise AppError(
-            message=msg,
-            status_code=502,
-            code="GEMINI_ERROR",
-        )
+    last_error = None
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model=settings.GEMINI_MODEL_NAME,
+                contents=prompt,
+                config=config,
+            )
+            return response.text.strip()
+        except Exception as e:
+            last_error = e
+            error_str = str(e)
+            is_quota = "429" in error_str or "RESOURCE_EXHAUSTED" in error_str
+            if not is_quota or attempt == 2:
+                break
+            delay = _extract_retry_delay(error_str) or (2 ** attempt * 5)
+            logger.warning(f"Gemini quota exhausted, retrying in {delay:.0f}s (attempt {attempt + 1}/3)")
+            time.sleep(delay)
+
+    logger.exception("Gemini API call failed")
+    msg = str(last_error) if settings.DEBUG_MODE else "The AI generation service is temporarily unavailable. Please try again."
+    raise AppError(
+        message=msg,
+        status_code=502,
+        code="GEMINI_ERROR",
+    )
 
 
 def answer_question(context: str, question: str) -> str:
