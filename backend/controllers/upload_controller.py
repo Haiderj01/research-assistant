@@ -48,6 +48,7 @@ def handle_upload():
             "id": str(p["_id"]),
             "title": p["title"],
             "status": p["status"],
+            "page_count": p.get("page_count", 0),
             "upload_date": p["upload_date"].isoformat() if hasattr(p.get("upload_date"), "isoformat") else str(p.get("upload_date", "")),
         })
 
