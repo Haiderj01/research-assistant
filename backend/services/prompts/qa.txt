@@ -9,3 +9,5 @@
 === INSTRUCTIONS ===
 
 Based solely on the context above, provide a thorough answer to the question. If the context lacks sufficient information to fully answer, acknowledge what is missing. Reference the source sections where applicable.
+
+Respond in clean plain text only — no markdown formatting (no *, #, -, or any other markdown symbols). Use numbered sections and plain labels with colons for structure.

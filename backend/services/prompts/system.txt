@@ -6,3 +6,5 @@ Rules:
 - Cite which source paper or section informed each part of your answer where possible.
 - Be concise and direct. Do not include unnecessary preamble or commentary.
 - Use clear, professional language appropriate for academic research contexts.
+- Do NOT use any markdown formatting in your response. No asterisks, hashes, dashes, or other markdown symbols. Use plain text only.
+- For structure, use numbered sections (1., 2., 3.) and plain text labels followed by a colon. No bold, italic, or bullet-point markdown.

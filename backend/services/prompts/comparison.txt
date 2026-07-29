@@ -9,3 +9,5 @@ Compare the papers above across the following dimensions: {dimensions}.
 For each dimension, provide a structured comparison showing what each paper says, highlighting similarities and differences. Format the output as a clear comparison with one section per dimension.
 
 Base your comparison exclusively on the provided paper content. If a paper does not contain information about a particular dimension, note that explicitly rather than guessing.
+
+Do NOT use any markdown formatting in your response. No asterisks, hashes, dashes, or markdown symbols. Use plain text with section labels followed by colons.
