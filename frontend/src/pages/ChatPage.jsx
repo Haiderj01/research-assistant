@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { usePapers } from "../hooks/usePapers";
 import { askQuestion } from "../api/queries";
+import { getConversationMessages } from "../api/history";
 import ChatBubble from "../components/ChatBubble";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function ChatPage() {
+  const [searchParams] = useSearchParams();
   const { papers, papersLoading } = usePapers();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -12,9 +15,28 @@ export default function ChatPage() {
   const [asking, setAsking] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const [sources, setSources] = useState(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const endRef = useRef(null);
 
   const processedPapers = papers.filter((p) => p.status === "processed");
+
+  const urlConversationId = searchParams.get("conversationId");
+  const initialLoadDone = useRef(false);
+
+  useEffect(() => {
+    if (!urlConversationId || initialLoadDone.current) return;
+    initialLoadDone.current = true;
+    setLoadingMessages(true);
+    getConversationMessages(urlConversationId)
+      .then((res) => {
+        const { conversation, messages: msgs } = res.data;
+        setMessages(msgs);
+        setConversationId(conversation.id);
+        setSelectedPapers(conversation.paper_ids);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingMessages(false));
+  }, [urlConversationId]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -55,9 +77,11 @@ export default function ChatPage() {
     <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-3rem)]">
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Ask a Question</h2>
 
-      {papersLoading ? (
+      {loadingMessages ? (
+        <LoadingSpinner text="Loading conversation..." />
+      ) : papersLoading ? (
         <LoadingSpinner text="Loading papers..." />
-      ) : processedPapers.length === 0 ? (
+      ) : processedPapers.length === 0 && messages.length === 0 ? (
         <div className="flex-1 flex items-center justify-center text-gray-500">
           <p>Upload and process a paper before asking questions.</p>
         </div>

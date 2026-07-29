@@ -8,3 +8,7 @@ export function getHistory(limit) {
 export function renameConversation(id, title) {
   return client.patch(`/conversation/${id}`, { title });
 }
+
+export function getConversationMessages(id) {
+  return client.get(`/conversation/${id}/messages`);
+}

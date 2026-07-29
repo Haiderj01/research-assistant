@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useConversations } from "../hooks/useConversations";
 import { renameConversation } from "../api/history";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function HistoryPage() {
+  const navigate = useNavigate();
   const { conversations, conversationsLoading, fetchConversations } = useConversations();
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
@@ -59,13 +61,22 @@ export default function HistoryPage() {
                   <button onClick={cancelEdit} className="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
                 </div>
               ) : (
-                <h3
-                  className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
-                  onClick={() => startEdit(c)}
-                  title="Click to rename"
-                >
-                  {c.title || "Untitled conversation"}
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3
+                    className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors flex-1 min-w-0 truncate"
+                    onClick={() => navigate(`/chat?conversationId=${c.id}`)}
+                    title="Open conversation"
+                  >
+                    {c.title || "Untitled conversation"}
+                  </h3>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); startEdit(c); }}
+                    className="shrink-0 ml-2 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Rename"
+                  >
+                    Rename
+                  </button>
+                </div>
               )}
               <p className="text-xs text-gray-500 mt-1">
                 {new Date(c.updated_at).toLocaleString()} &middot;{" "}
