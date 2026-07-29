@@ -1,16 +1,23 @@
-import { useState, useCallback } from "react";
-import { useAppDispatch } from "../context/AppContext";
+import { useState, useCallback, useEffect } from "react";
+import { useAppState, useAppDispatch } from "../context/AppContext";
 import { uploadPapers as uploadApi } from "../api/uploads";
+import { listPapers, deletePaper } from "../api/papers";
 import FileUploader from "../components/FileUploader";
 import PaperCard from "../components/PaperCard";
 import SummarizeModal from "../components/SummarizeModal";
 
 export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
-  const [uploadedPapers, setUploadedPapers] = useState([]);
   const [error, setError] = useState(null);
   const [summarizeTarget, setSummarizeTarget] = useState(null);
+  const { papers } = useAppState();
   const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    listPapers()
+      .then((res) => dispatch({ type: "SET_PAPERS", payload: res.data.papers }))
+      .catch(() => {});
+  }, [dispatch]);
 
   const handleUpload = useCallback(
     async (files) => {
@@ -18,7 +25,6 @@ export default function UploadPage() {
       setError(null);
       try {
         const res = await uploadApi(files);
-        setUploadedPapers((prev) => [...res.data.papers, ...prev]);
         dispatch({ type: "ADD_PAPERS", payload: res.data.papers });
       } catch (err) {
         setError(err.message);
@@ -41,19 +47,23 @@ export default function UploadPage() {
         </div>
       )}
 
-      {uploadedPapers.length > 0 && (
+      {papers.length > 0 && (
         <div className="mt-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-3">
             Recently Uploaded
           </h3>
           <div className="space-y-3">
-            {uploadedPapers.map((p) => (
+            {papers.map((p) => (
               <PaperCard
                 key={p.id}
                 paper={p}
                 onSummarize={(id, title) => setSummarizeTarget({ id, title })}
-                onDelete={(id) => {
-                  setUploadedPapers((prev) => prev.filter((pp) => pp.id !== id));
+                onDelete={async (id) => {
+                  try {
+                    await deletePaper(id);
+                    const res = await listPapers();
+                    dispatch({ type: "SET_PAPERS", payload: res.data.papers });
+                  } catch {}
                 }}
               />
             ))}
