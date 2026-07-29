@@ -18,8 +18,10 @@ class DatabaseService:
         Returns:
             True if connection succeeded, False otherwise.
         """
-        if cls._client is not None:
+        if cls._db is not None:
             return True
+        if cls._client is not None and cls._db is None:
+            cls._client = None
         try:
             cls._client = MongoClient(
                 settings.DATABASE_URL,
@@ -32,21 +34,27 @@ class DatabaseService:
             return True
         except ConnectionFailure:
             logger.warning("MongoDB connection failed — falling back to in-memory mock database")
-            import mongomock
-            import shutil
-            cls._client = mongomock.MongoClient()
-            cls._db = cls._client["research_assistant"]
-            cls._ensure_indexes()
-            if os.path.exists(settings.VECTOR_STORE_PATH):
-                shutil.rmtree(settings.VECTOR_STORE_PATH)
-                logger.info("Cleared stale vector store to stay in sync with in-memory database")
-            return True
+            try:
+                import mongomock
+                cls._client = mongomock.MongoClient()
+                cls._db = cls._client["research_assistant"]
+                cls._ensure_indexes()
+                logger.info("Connected to in-memory mock database")
+                return True
+            except Exception as mock_err:
+                logger.error(f"Mock database fallback also failed: {mock_err}")
+                cls._client = None
+                cls._db = None
+                return False
 
     @classmethod
     def get_db(cls):
         """Get the database instance, connecting if necessary."""
         if cls._db is None:
-            cls.connect()
+            try:
+                cls.connect()
+            except Exception as e:
+                logger.error(f"Failed to connect to database: {e}")
         return cls._db
 
     @classmethod
