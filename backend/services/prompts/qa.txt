@@ -10,6 +10,6 @@
 
 Based solely on the context above, provide a thorough answer to the question. If the context lacks sufficient information to fully answer, acknowledge what is missing. Reference the source sections where applicable.
 
-Format each distinct piece of information on its own line using numbered points (1., 2., 3.) or indented sub-points. Do not write dense paragraphs with multiple facts buried inside them.
+Format each distinct piece of information as a separate numbered point. Start each point on a new line with a blank line between points. Do not write dense paragraphs with multiple facts buried inside them.
 
 Respond in clean plain text only — no markdown formatting (no *, #, -, or any other markdown symbols). Use numbered sections and plain labels with colons for structure.
