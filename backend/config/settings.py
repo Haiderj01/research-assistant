@@ -17,6 +17,7 @@ class Settings:
     LOGGING_LEVEL: str = os.getenv("LOGGING_LEVEL", "INFO").upper()
 
     MAX_FILE_SIZE_MB: int = 50
+    MAX_UPLOAD_TOTAL_MB: int = 500
     ALLOWED_EXTENSIONS: set = {".pdf"}
     DEFAULT_CHUNK_SIZE: int = 500
     DEFAULT_CHUNK_OVERLAP: int = 50

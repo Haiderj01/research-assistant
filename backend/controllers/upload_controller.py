@@ -27,7 +27,7 @@ def handle_upload():
         if not file.filename:
             continue
         try:
-            paper = ingestion_service.process_upload(file)
+            paper = ingestion_service.save_and_queue(file)
             processed.append(paper)
         except AppError:
             raise

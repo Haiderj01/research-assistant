@@ -19,6 +19,17 @@ export default function UploadPage() {
       .catch(() => {});
   }, [dispatch]);
 
+  const hasPending = papers.some((p) => p.status === "pending" || p.status === "processing");
+  useEffect(() => {
+    if (!hasPending) return;
+    const interval = setInterval(() => {
+      listPapers()
+        .then((res) => dispatch({ type: "SET_PAPERS", payload: res.data.papers }))
+        .catch(() => {});
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [hasPending, dispatch]);
+
   const handleUpload = useCallback(
     async (files) => {
       setUploading(true);

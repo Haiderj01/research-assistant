@@ -5,6 +5,6 @@ export function uploadPapers(files) {
   files.forEach((file) => formData.append("files", file));
   return client.post("/upload", formData, {
     headers: { "Content-Type": "multipart/form-data" },
-    timeout: 120000,
+    timeout: 300000,
   });
 }
