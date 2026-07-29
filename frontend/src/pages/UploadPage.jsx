@@ -38,6 +38,7 @@ export default function UploadPage() {
         const res = await uploadApi(files);
         dispatch({ type: "ADD_PAPERS", payload: res.data.papers });
       } catch (err) {
+        console.error("Upload failed:", err);
         setError(err.message);
       } finally {
         setUploading(false);
