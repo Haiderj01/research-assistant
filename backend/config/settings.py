@@ -8,7 +8,7 @@ _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 class Settings:
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY")
-    GEMINI_MODEL_NAME: str = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+    GEMINI_MODEL_NAME: str = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
     UPLOAD_DIRECTORY: str = os.path.join(_BASE_DIR, os.getenv("UPLOAD_DIRECTORY", "uploads"))
     DATABASE_URL: str = os.getenv("DATABASE_URL", "mongodb://localhost:27017/research_assistant")
     VECTOR_STORE_PATH: str = os.path.join(_BASE_DIR, os.getenv("VECTOR_STORE_PATH", "vector_store"))
