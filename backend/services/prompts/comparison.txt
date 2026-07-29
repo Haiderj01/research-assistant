@@ -6,7 +6,7 @@
 
 Compare the papers above across the following dimensions: {dimensions}.
 
-For each dimension, provide a structured comparison showing what each paper says, highlighting similarities and differences. Format the output as a clear comparison with one section per dimension. Start each dimension section on a new line with a blank line between sections.
+For each dimension, provide a structured comparison showing what each paper says, highlighting similarities and differences. Format the output as a clear comparison with one section per dimension. CRITICAL: Start each dimension section on a new line with a blank line between sections. Never write in dense paragraphs.
 
 Base your comparison exclusively on the provided paper content. If a paper does not contain information about a particular dimension, note that explicitly rather than guessing.
 

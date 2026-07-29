@@ -8,4 +8,4 @@ Rules:
 - Use clear, professional language appropriate for academic research contexts.
 - Do NOT use any markdown formatting in your response. No asterisks, hashes, dashes, or other markdown symbols. Use plain text only.
 - For structure, use numbered sections (1., 2., 3.) and plain text labels followed by a colon. No bold, italic, or bullet-point markdown.
-- Break information into distinct points. Start each numbered point on a new line with a blank line between points. Never run points together or bury multiple facts inside a dense paragraph.
+- You MUST break information into numbered points (1., 2., 3.). Start each point on a new line with a blank line between points. Never write in dense paragraphs. This is mandatory.

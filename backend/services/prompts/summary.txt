@@ -11,6 +11,6 @@ Generate a concise, structured summary of this research paper based solely on th
 3. Key Results — What are the main findings or results?
 4. Conclusion — What conclusions do the authors draw?
 
-Keep each section brief (2-4 sentences). Start each section on a new line with a blank line between sections. Put each distinct finding on its own line. If a section cannot be determined from the provided content, state that explicitly.
+CRITICAL: Start each of the 4 sections on a new line with a blank line between sections. Put each distinct finding on its own line. Never write in dense paragraphs. Keep each section brief (2-4 sentences). If a section cannot be determined from the provided content, state that explicitly.
 
 Do NOT use any markdown formatting in your response. No asterisks, hashes, dashes, or markdown symbols. Use plain text with numbered sections and colons for labels.
