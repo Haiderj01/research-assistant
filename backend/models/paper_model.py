@@ -19,9 +19,6 @@ def create_paper(
         "upload_date": datetime.now(timezone.utc),
         "page_count": 0,
         "status": "pending",
-        "keywords": [],
-        "datasets": [],
-        "algorithms": [],
         "summary": "",
         "user_id": ObjectId(user_id) if user_id else None,
     }
