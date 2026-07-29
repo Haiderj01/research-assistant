@@ -9,13 +9,13 @@ from backend.models import paper_model, chunk_model
 from backend.middlewares.error_handler import AppError
 from backend.utils.logger import logger
 
+_jobs = []
+_jobs_lock = threading.Lock()
+_jobs_event = threading.Event()
 
-def _process_in_background(file_path: str, paper_id: str):
-    """Run the full ingestion pipeline in a background thread.
 
-    Steps: extract text, chunk, embed, store vectors, persist chunks.
-    Updates the paper status to 'processed' or 'failed' on completion.
-    """
+def _process_single(file_path: str, paper_id: str):
+    """Run the full ingestion pipeline for one paper."""
     try:
         extraction = pdf_service.process_pdf(file_path)
         paper_model.update_paper(paper_id, {"page_count": extraction["total_pages"]})
@@ -51,12 +51,33 @@ def _process_in_background(file_path: str, paper_id: str):
         paper_model.update_paper(paper_id, {"status": "failed"})
 
 
+def _worker_loop():
+    """Single worker: processes queued files one at a time, smallest first."""
+    while True:
+        _jobs_event.wait()
+        _jobs_event.clear()
+        job = None
+        with _jobs_lock:
+            if _jobs:
+                _jobs.sort(key=lambda j: j["file_size"])
+                job = _jobs.pop(0)
+            if _jobs:
+                _jobs_event.set()
+        if job:
+            _process_single(job["file_path"], job["paper_id"])
+
+
+_worker = threading.Thread(target=_worker_loop, daemon=True)
+_worker.start()
+
+
 def save_and_queue(file) -> dict:
     """Save the uploaded file and queue background processing.
 
     Returns a paper record immediately with status 'pending'.
     The full pipeline (chunking, embedding, indexing) runs in a
-    background thread so the upload endpoint returns quickly.
+    single background worker that processes files one at a time,
+    smallest file first.
 
     Args:
         file: A werkzeug FileStorage object from the upload request.
@@ -92,7 +113,11 @@ def save_and_queue(file) -> dict:
         )
 
     paper_id = str(paper["_id"])
-    thread = threading.Thread(target=_process_in_background, args=(file_path, paper_id), daemon=True)
-    thread.start()
+    file_size = os.path.getsize(file_path)
+
+    with _jobs_lock:
+        _jobs.append({"file_path": file_path, "paper_id": paper_id, "file_size": file_size})
+        _jobs.sort(key=lambda j: j["file_size"])
+        _jobs_event.set()
 
     return paper_model.get_paper(paper_id)
