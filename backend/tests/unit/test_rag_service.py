@@ -79,3 +79,27 @@ class TestAnswerQuery:
     def test_raises_error_for_no_paper_ids(self, mock_deps):
         with pytest.raises(AppError, match="At least one paper"):
             answer_query(question="test?", paper_ids=[])
+
+    def test_paper_scope_filters_cross_paper_chunks(self, mock_deps):
+        mock_deps["chunks"].get_chunks_by_vector_ids.return_value = [
+            {"_id": "oid_1", "vector_id": "chunk_1", "chunk_text": "Paper A content.",
+             "paper_id": "paper_a", "page_number": 1},
+            {"_id": "oid_2", "vector_id": "chunk_2", "chunk_text": "Paper B content.",
+             "paper_id": "paper_b", "page_number": 1},
+            {"_id": "oid_3", "vector_id": "chunk_3", "chunk_text": "Paper A more content.",
+             "paper_id": "paper_a", "page_number": 2},
+        ]
+        mock_deps["vector_store"].search.return_value = [
+            {"chunk_id": "chunk_1", "score": 0.95, "position": 0},
+            {"chunk_id": "chunk_2", "score": 0.90, "position": 1},
+            {"chunk_id": "chunk_3", "score": 0.85, "position": 2},
+        ]
+
+        result = answer_query(
+            question="Test?",
+            paper_ids=["paper_a"],
+        )
+        assert len(result["sources"]) == 2
+        for s in result["sources"]:
+            assert s["paper_id"] == "paper_a"
+        assert "Paper B" not in str(result["sources"])

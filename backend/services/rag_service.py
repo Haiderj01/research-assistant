@@ -51,7 +51,7 @@ def answer_query(
 
     query_vector = embedding_service.generate_embedding(question)
 
-    results = vector_store.search(query_vector, k=top_k)
+    results = vector_store.search(query_vector, k=top_k * 3)
     if not results:
         answer = (
             "The uploaded papers do not contain information relevant to your question. "
@@ -71,7 +71,7 @@ def answer_query(
     for r in results:
         cid = r["chunk_id"]
         chunk = chunks_by_id.get(cid)
-        if chunk:
+        if chunk and str(chunk["paper_id"]) in paper_ids:
             source_chunks.append({
                 "chunk_id": cid,
                 "chunk_mongo_id": str(chunk["_id"]),
@@ -80,6 +80,8 @@ def answer_query(
                 "page_number": chunk.get("page_number"),
                 "score": r["score"],
             })
+
+    source_chunks = source_chunks[:top_k]
 
     if not source_chunks:
         answer = (
