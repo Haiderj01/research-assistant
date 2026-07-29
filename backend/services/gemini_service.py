@@ -35,7 +35,7 @@ def _generate(prompt: str, system_instruction: str = None) -> str:
 
     try:
         response = client.models.generate_content(
-            model="gemini-3.1-flash-lite",
+            model=settings.GEMINI_MODEL_NAME,
             contents=prompt,
             config=config,
         )
