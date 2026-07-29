@@ -4,6 +4,7 @@ from backend.config.settings import settings
 from backend.middlewares.error_handler import register_error_handlers
 from backend.services.database_service import DatabaseService
 from backend.services.vector_store_service import vector_store
+from backend.services.embedding_service import preload_model
 from backend.routes.upload_routes import upload_bp
 from backend.routes.query_routes import query_bp
 from backend.routes.paper_routes import paper_bp
@@ -22,6 +23,7 @@ def create_app() -> Flask:
     app.config["UPLOAD_FOLDER"] = settings.UPLOAD_DIRECTORY
 
     register_error_handlers(app)
+    preload_model()
 
     @app.route("/api/v1/health", methods=["GET"])
     def health_check():

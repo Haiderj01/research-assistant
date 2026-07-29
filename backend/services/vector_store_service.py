@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 import numpy as np
 import faiss
 from backend.config.settings import settings
@@ -29,6 +30,7 @@ class VectorStoreService:
         self._id_to_chunk: dict[int, str] = {}
         self._vectors: dict[int, np.ndarray] = {}
         self._index: faiss.Index = None
+        self._lock: threading.Lock = threading.Lock()
 
         self._load_or_create()
 
@@ -73,18 +75,19 @@ class VectorStoreService:
                     code="DIMENSION_MISMATCH",
                 )
 
-        matrix = np.array(vectors, dtype=np.float32)
-        faiss_ids = np.array(
-            [self._next_id + i for i in range(len(vectors))], dtype=np.int64
-        )
+        with self._lock:
+            matrix = np.array(vectors, dtype=np.float32)
+            faiss_ids = np.array(
+                [self._next_id + i for i in range(len(vectors))], dtype=np.int64
+            )
 
-        self._index.add_with_ids(matrix, faiss_ids)
-        for i, fid in enumerate(faiss_ids):
-            self._id_to_chunk[int(fid)] = chunk_ids[i]
-            self._vectors[int(fid)] = matrix[i]
-        self._next_id += len(vectors)
+            self._index.add_with_ids(matrix, faiss_ids)
+            for i, fid in enumerate(faiss_ids):
+                self._id_to_chunk[int(fid)] = chunk_ids[i]
+                self._vectors[int(fid)] = matrix[i]
+            self._next_id += len(vectors)
 
-        self._save()
+            self._save()
         logger.info(f"Added {len(vectors)} vectors to store (total={self.size})")
         return faiss_ids.tolist()
 
