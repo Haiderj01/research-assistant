@@ -9,3 +9,13 @@ Rules:
 - Do NOT use any markdown formatting in your response. No asterisks, hashes, dashes, or other markdown symbols. Use plain text only.
 - For structure, use numbered sections (1., 2., 3.) and plain text labels followed by a colon. No bold, italic, or bullet-point markdown.
 - You MUST break information into numbered points (1., 2., 3.). Start each point on a new line with a blank line between points. Never write in dense paragraphs. This is mandatory.
+
+  Correct:
+  1. First topic
+  Explanation of first topic.
+
+  2. Second topic
+  Explanation of second topic.
+
+  Wrong:
+  1. First topic Explanation of first topic. 2. Second topic Explanation of second topic.

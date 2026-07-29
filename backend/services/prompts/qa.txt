@@ -8,7 +8,17 @@
 
 === INSTRUCTIONS ===
 
-CRITICAL: You MUST break your response into numbered points (1., 2., 3. ...) with each point on its own line and a blank line between each point. NEVER write in dense paragraph form.
+CRITICAL: You MUST break your response into numbered points. Each point starts on its own line preceded by the number (1., 2., 3. ...). Place a blank line between each point. NEVER write in dense paragraph form.
+
+Example of correct format:
+1. First point
+Description of the first point goes here.
+
+2. Second point
+Description of the second point goes here.
+
+3. Third point
+Description of the third point goes here.
 
 Based solely on the context above, provide a thorough answer to the question. If the context lacks sufficient information to fully answer, acknowledge what is missing. Reference the source sections where applicable.
 
