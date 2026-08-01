@@ -125,6 +125,10 @@ class VectorStoreService:
             })
         return results
 
+    def list_chunk_ids(self) -> set[str]:
+        """Return the set of all chunk IDs currently in the store."""
+        return set(self._id_to_chunk.values())
+
     def remove_vectors(self, chunk_ids: list[str]) -> int:
         """Remove vectors associated with given chunk IDs.
 

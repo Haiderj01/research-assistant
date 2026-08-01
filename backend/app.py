@@ -15,6 +15,34 @@ from backend.routes.comparison_routes import comparison_bp
 from backend.utils.logger import logger
 
 
+def _prune_stale_vectors() -> None:
+    """Remove vectors whose chunks no longer exist in the database.
+
+    The FAISS index is persisted across restarts, but the database may be
+    reset (e.g. in-memory mock) or documents may be deleted. Stale vectors
+    pollute similarity search and cause valid papers to be out-ranked.
+    """
+    chunks = DatabaseService.get_collection("chunks")
+    if chunks is None:
+        logger.warning("Skipping vector prune: database unavailable.")
+        return
+
+    try:
+        db_chunk_ids = {
+            str(doc["vector_id"])
+            for doc in chunks.find({}, {"vector_id": 1})
+            if doc.get("vector_id")
+        }
+    except Exception:
+        logger.exception("Skipping vector prune: failed to read chunk IDs.")
+        return
+
+    stale = vector_store.list_chunk_ids() - db_chunk_ids
+    if stale:
+        vector_store.remove_vectors(list(stale))
+        logger.info(f"Pruned {len(stale)} stale vectors from store")
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     CORS(app)
@@ -24,6 +52,7 @@ def create_app() -> Flask:
 
     register_error_handlers(app)
     preload_model()
+    _prune_stale_vectors()
 
     @app.route("/api/v1/health", methods=["GET"])
     def health_check():
