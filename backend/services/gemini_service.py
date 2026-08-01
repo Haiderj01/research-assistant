@@ -17,13 +17,16 @@ def _load_prompt(name: str) -> str:
 
 
 def _get_client() -> genai.Client:
-    if not settings.GEMINI_API_KEY:
+    api_key = settings.GEMINI_API_KEY
+
+    if not api_key:
         raise AppError(
             message="Gemini API key is not configured.",
             status_code=500,
             code="MISSING_API_KEY",
         )
-    return genai.Client(api_key=settings.GEMINI_API_KEY)
+
+    return genai.Client(api_key=api_key)
 
 
 def _extract_retry_delay(error_msg: str) -> float:
@@ -31,7 +34,7 @@ def _extract_retry_delay(error_msg: str) -> float:
     return float(match.group(1)) if match else 0
 
 
-def _generate(prompt: str, system_instruction: str = None) -> str:
+def _generate(prompt: str, system_instruction: str | None = None) -> str:
     client = _get_client()
     config = types.GenerateContentConfig(
         temperature=0.3,
@@ -43,11 +46,28 @@ def _generate(prompt: str, system_instruction: str = None) -> str:
     last_error = None
     for attempt in range(3):
         try:
+            model_name = settings.GEMINI_MODEL_NAME
+
+            if not model_name:
+                raise AppError(
+                    message="Gemini model name is not configured.",
+                    status_code=500,
+                    code="MISSING_MODEL_NAME",
+                )
+
             response = client.models.generate_content(
-                model=settings.GEMINI_MODEL_NAME,
+                model=model_name,
                 contents=prompt,
                 config=config,
             )
+
+            if response.text is None:
+                raise AppError(
+                    message="Gemini returned an empty response.",
+                    status_code=502,
+                    code="EMPTY_GEMINI_RESPONSE",
+                )
+
             return response.text.strip()
         except Exception as e:
             last_error = e
