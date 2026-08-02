@@ -53,7 +53,7 @@ def answer_query(
 
     query_vector = embedding_service.generate_embedding(question)
 
-    results = vector_store.search(query_vector, k=top_k * 3)
+    results = vector_store.search(query_vector, k=top_k * 3, paper_ids=paper_ids)
     if not results:
         answer = (
             "The uploaded papers do not contain information relevant to your question. "

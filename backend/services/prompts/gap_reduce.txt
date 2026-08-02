@@ -1,0 +1,23 @@
+=== PER-PAPER LIMITATIONS AND FUTURE WORK ===
+
+{summaries}
+
+=== INSTRUCTIONS ===
+
+Synthesize the per-paper summaries above into a cross-paper research gap analysis. Each summary is tagged with its paper ID and title. Identify the open problems and research gaps that exist across the set of papers.
+
+Output each identified gap as a separate block in this exact plain-text format, with one blank line between blocks:
+
+Gap N:
+Gap: <concise statement of the gap or open problem>
+Supporting Papers: <paper IDs separated by commas>
+Strength: <"multiple" or "single">
+Suggested Direction: <short, concrete research direction to address this gap>
+
+Where N is the gap number (1, 2, 3, ...).
+
+Rules:
+- Every gap MUST be grounded in the provided per-paper content and traceable to at least one paper ID. Do not invent gaps that no paper states or clearly implies.
+- List gaps mentioned by more than one paper first (Strength: multiple), then gaps mentioned by only one paper (Strength: single).
+- Use the paper IDs exactly as provided in the summaries.
+- Do NOT use any markdown formatting. No asterisks, hashes, dashes, or other markdown symbols. Use the exact labels above (Gap:, Supporting Papers:, Strength:, Suggested Direction:) followed by colons.

@@ -103,3 +103,40 @@ class TestAnswerQuery:
         for s in result["sources"]:
             assert s["paper_id"] == "paper_a"
         assert "Paper B" not in str(result["sources"])
+
+    def test_paper_ids_passed_to_vector_search(self, mock_deps):
+        mock_deps["vector_store"].search.return_value = [
+            {"chunk_id": "chunk_1", "score": 0.95, "position": 0},
+        ]
+        mock_deps["chunks"].get_chunks_by_vector_ids.return_value = [
+            {"_id": "oid_1", "vector_id": "chunk_1", "chunk_text": "Content.",
+             "paper_id": "paper_a", "page_number": 1},
+        ]
+
+        answer_query(
+            question="Test?",
+            paper_ids=["paper_a", "paper_b"],
+        )
+
+        mock_deps["vector_store"].search.assert_called_once()
+        _, kwargs = mock_deps["vector_store"].search.call_args
+        assert kwargs["paper_ids"] == ["paper_a", "paper_b"]
+
+    def test_scoped_query_never_returns_other_paper_chunks(self, mock_deps):
+        mock_deps["chunks"].get_chunks_by_vector_ids.return_value = [
+            {"_id": "oid_1", "vector_id": "chunk_1", "chunk_text": "Paper A content.",
+             "paper_id": "paper_a", "page_number": 1},
+            {"_id": "oid_2", "vector_id": "chunk_2", "chunk_text": "Paper B content.",
+             "paper_id": "paper_b", "page_number": 1},
+        ]
+        mock_deps["vector_store"].search.return_value = [
+            {"chunk_id": "chunk_1", "score": 0.95, "position": 0},
+            {"chunk_id": "chunk_2", "score": 0.90, "position": 1},
+        ]
+
+        result = answer_query(
+            question="Test?",
+            paper_ids=["paper_a"],
+        )
+        for s in result["sources"]:
+            assert s["paper_id"] != "paper_b"

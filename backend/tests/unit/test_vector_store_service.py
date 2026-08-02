@@ -1,5 +1,6 @@
 import os
 import tempfile
+from unittest.mock import patch
 import pytest
 from backend.services.vector_store_service import VectorStoreService
 from backend.middlewares.error_handler import AppError
@@ -95,3 +96,55 @@ class TestVectorStoreService:
         store.add_vectors([vec_a, vec_b], ["target", "distract"])
         results = store.search(query, k=2)
         assert results[0]["chunk_id"] == "target"
+
+    def test_search_scoped_to_paper_excludes_other_papers(self, store):
+        vec_a = _random_vector()
+        vec_b = _random_vector()
+        vec_c = _random_vector()
+        query = vec_a[:]
+        store.add_vectors([vec_a, vec_b, vec_c], ["chunk_a", "chunk_b", "chunk_c"])
+
+        def fake_get_chunks(vector_ids):
+            mapping = {
+                "chunk_a": "paper_a",
+                "chunk_b": "paper_b",
+                "chunk_c": "paper_a",
+            }
+            return [
+                {"vector_id": vid, "paper_id": mapping[vid]}
+                for vid in vector_ids
+                if vid in mapping
+            ]
+
+        with patch(
+            "backend.services.vector_store_service.chunk_model.get_chunks_by_vector_ids",
+            side_effect=fake_get_chunks,
+        ):
+            results = store.search(query, k=5, paper_ids=["paper_a"])
+
+        assert len(results) == 2
+        assert all(r["chunk_id"] in ("chunk_a", "chunk_c") for r in results)
+
+    def test_search_scoped_to_missing_paper_returns_empty(self, store):
+        vec_a = _random_vector()
+        query = vec_a[:]
+        store.add_vectors([vec_a], ["chunk_a"])
+
+        def fake_get_chunks(vector_ids):
+            return [{"vector_id": vid, "paper_id": "paper_a"} for vid in vector_ids]
+
+        with patch(
+            "backend.services.vector_store_service.chunk_model.get_chunks_by_vector_ids",
+            side_effect=fake_get_chunks,
+        ):
+            results = store.search(query, k=5, paper_ids=["paper_missing"])
+
+        assert results == []
+
+    def test_unfiltered_search_still_returns_all_papers(self, store):
+        vec_a = _random_vector()
+        vec_b = _random_vector()
+        query = vec_a[:]
+        store.add_vectors([vec_a, vec_b], ["chunk_a", "chunk_b"])
+        results = store.search(query, k=2)
+        assert len(results) == 2

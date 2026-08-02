@@ -29,6 +29,8 @@ class Settings:
     DEFAULT_CHUNK_SIZE: int = 500
     DEFAULT_CHUNK_OVERLAP: int = 50
     DEFAULT_TOP_K: int = 5
+    VECTOR_SEARCH_OVERSAMPLE_FACTOR: int = 3
+    VECTOR_SEARCH_MAX_OVERSAMPLE_FACTOR: int = 32
     EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
 
     def validate_required(self):

@@ -1,0 +1,19 @@
+=== PAPER CONTENT ===
+
+{context}
+
+=== INSTRUCTIONS ===
+
+You are analyzing the limitations and future-work sections of a single research paper. Using ONLY the paper content above, extract the study's stated limitations, challenges, weaknesses, and future research directions.
+
+Produce a structured summary using plain text only. Format it as numbered sections:
+
+1. Limitations: List each limitation the authors state about their own study.
+2. Future Work: List each future direction or open problem the authors mention.
+3. Gaps: List any research gap implied by the authors' own discussion.
+
+Rules:
+- Base every item exclusively on the provided content. Do not infer gaps that the paper does not state or clearly imply.
+- If a section has no content, write "None stated" for that section.
+- Keep each item brief (1-2 sentences) and concrete.
+- Do NOT use any markdown formatting. No asterisks, hashes, dashes, or other markdown symbols. Use plain text with numbered sections and colons for labels.

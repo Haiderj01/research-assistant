@@ -5,6 +5,7 @@ import numpy as np
 import faiss
 from backend.config.settings import settings
 from backend.middlewares.error_handler import AppError
+from backend.models import chunk_model
 from backend.utils.logger import logger
 
 
@@ -91,12 +92,20 @@ class VectorStoreService:
         logger.info(f"Added {len(vectors)} vectors to store (total={self.size})")
         return faiss_ids.tolist()
 
-    def search(self, query_vector: list[float], k: int = None) -> list[dict]:
-        """Search for the k most similar vectors.
+    def search(self, query_vector: list[float], k: int = None, paper_ids: list[str] = None) -> list[dict]:
+        """Search for the k most similar vectors, optionally scoped to papers.
+
+        FAISS does not natively filter by metadata, so when ``paper_ids`` is
+        provided the search oversamples the FAISS index, resolves the returned
+        chunk IDs against MongoDB, keeps only chunks belonging to one of the
+        given papers, and truncates to the requested ``k``. If too few chunks
+        survive the filter, the oversample is doubled and the search retried,
+        up to a configured maximum oversample factor.
 
         Args:
             query_vector: The query embedding vector.
             k: Number of results to return (default from settings).
+            paper_ids: Optional list of paper IDs to scope results to.
 
         Returns:
             A list of dicts with keys:
@@ -111,10 +120,17 @@ class VectorStoreService:
             return []
 
         matrix = np.array([query_vector], dtype=np.float32)
-        distances, indices = self._index.search(matrix, k)
 
+        if not paper_ids:
+            distances, indices = self._index.search(matrix, k)
+            return self._format_results(distances[0], indices[0])
+
+        return self._search_paper_scoped(matrix, k, set(paper_ids))
+
+    def _format_results(self, distances, indices) -> list[dict]:
+        """Build result dicts from a FAISS distance/index pair."""
         results = []
-        for pos, (dist, idx) in enumerate(zip(distances[0], indices[0])):
+        for pos, (dist, idx) in enumerate(zip(distances, indices)):
             if idx == -1:
                 continue
             chunk_id = self._id_to_chunk.get(int(idx), str(int(idx)))
@@ -124,6 +140,37 @@ class VectorStoreService:
                 "position": pos,
             })
         return results
+
+    def _search_paper_scoped(self, matrix, k: int, paper_ids: set) -> list[dict]:
+        """Oversample, filter by paper ownership, and truncate to k results."""
+        oversample_factor = settings.VECTOR_SEARCH_OVERSAMPLE_FACTOR
+        max_oversample = k * settings.VECTOR_SEARCH_MAX_OVERSAMPLE_FACTOR
+
+        while oversample_factor * k <= max_oversample:
+            fetch_k = min(oversample_factor * k, self.size)
+            distances, indices = self._index.search(matrix, fetch_k)
+            results = self._format_results(distances[0], indices[0])
+            if not results:
+                return []
+
+            vector_ids = [r["chunk_id"] for r in results]
+            chunks = chunk_model.get_chunks_by_vector_ids(vector_ids)
+            chunks_by_id = {c["vector_id"]: c for c in (chunks or [])}
+
+            filtered = []
+            for r in results:
+                chunk = chunks_by_id.get(r["chunk_id"])
+                if chunk and str(chunk.get("paper_id")) in paper_ids:
+                    filtered.append(r)
+                if len(filtered) >= k:
+                    break
+
+            if len(filtered) >= k or fetch_k >= self.size:
+                return filtered[:k]
+
+            oversample_factor *= 2
+
+        return []
 
     def list_chunk_ids(self) -> set[str]:
         """Return the set of all chunk IDs currently in the store."""

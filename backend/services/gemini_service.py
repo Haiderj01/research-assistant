@@ -137,3 +137,36 @@ def generate_comparison(context: str, dimensions: list[str]) -> str:
     prompt = template.replace("{context}", context).replace("{dimensions}", dims_str)
     logger.info(f"Generating comparison across {len(dimensions)} dimensions")
     return _generate(prompt, system_instruction=system)
+
+
+def extract_paper_gaps(context: str) -> str:
+    """Extract a single paper's stated limitations and future work.
+
+    Args:
+        context: The paper's retrieved chunk text.
+
+    Returns:
+        The generated structured summary of limitations and future work.
+    """
+    system = _load_prompt("system.txt")
+    template = _load_prompt("gap_map.txt")
+    prompt = template.replace("{context}", context)
+    logger.info("Extracting per-paper limitations and future work via Gemini")
+    return _generate(prompt, system_instruction=system)
+
+
+def synthesize_research_gaps(summaries: str) -> str:
+    """Synthesize a cross-paper research gap analysis from per-paper summaries.
+
+    Args:
+        summaries: Joined per-paper limitation/future-work summaries, tagged
+                   with paper IDs and titles.
+
+    Returns:
+        The generated gap analysis text.
+    """
+    system = _load_prompt("system.txt")
+    template = _load_prompt("gap_reduce.txt")
+    prompt = template.replace("{summaries}", summaries)
+    logger.info("Synthesizing cross-paper research gaps via Gemini")
+    return _generate(prompt, system_instruction=system)
