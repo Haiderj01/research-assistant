@@ -49,7 +49,7 @@ export default function UploadPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Upload Papers</h2>
+      <h2 className="text-2xl font-bold text-primary mb-6">Upload Papers</h2>
 
       <FileUploader onUpload={handleUpload} loading={uploading} />
 
@@ -61,7 +61,7 @@ export default function UploadPage() {
 
       {papers.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+          <h3 className="text-lg font-semibold text-primary mb-3">
             Recently Uploaded
           </h3>
           <div className="space-y-3">

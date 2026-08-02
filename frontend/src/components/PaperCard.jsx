@@ -1,10 +1,10 @@
 export default function PaperCard({ paper, onDelete, onSummarize }) {
   return (
-    <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm hover:shadow transition-shadow">
+    <div className="border border-border rounded-xl p-4 bg-surface shadow-sm hover:shadow transition-shadow">
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 truncate">{paper.title}</h3>
-          <p className="text-xs text-gray-500 mt-1">
+          <h3 className="font-semibold text-primary truncate">{paper.title}</h3>
+          <p className="text-xs text-secondary mt-1">
             {(paper.page_count ?? 0)} page{(paper.page_count ?? 0) !== 1 ? "s" : ""} &middot;{" "}
             {new Date(paper.upload_date).toLocaleDateString()}
           </p>
@@ -24,7 +24,7 @@ export default function PaperCard({ paper, onDelete, onSummarize }) {
       {paper.keywords?.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-3">
           {paper.keywords.slice(0, 5).map((kw) => (
-            <span key={kw} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+            <span key={kw} className="text-xs bg-surface-hover text-secondary px-2 py-0.5 rounded-full">
               {kw}
             </span>
           ))}
@@ -34,7 +34,7 @@ export default function PaperCard({ paper, onDelete, onSummarize }) {
         {paper.status === "processed" && onSummarize && (
           <button
             onClick={() => onSummarize(paper.id, paper.title)}
-            className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+            className="text-xs text-accent hover:text-accent-hover transition-colors"
           >
             Summarize
           </button>

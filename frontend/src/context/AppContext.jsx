@@ -1,9 +1,23 @@
-import { createContext, useContext, useReducer } from "react";
+import { createContext, useContext, useEffect, useReducer } from "react";
 
 const AppContext = createContext(null);
 const DispatchContext = createContext(null);
 
+function getInitialTheme() {
+  try {
+    const saved = localStorage.getItem("theme");
+    if (saved === "light" || saved === "dark") return saved;
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return "dark";
+    }
+  } catch {
+    // ignore storage access errors
+  }
+  return "light";
+}
+
 const initialState = {
+  theme: getInitialTheme(),
   papers: [],
   papersLoading: false,
   conversations: [],
@@ -14,6 +28,10 @@ const initialState = {
 
 function reducer(state, action) {
   switch (action.type) {
+    case "TOGGLE_THEME":
+      return { ...state, theme: state.theme === "dark" ? "light" : "dark" };
+    case "SET_THEME":
+      return { ...state, theme: action.payload };
     case "SET_PAPERS":
       return { ...state, papers: action.payload, papersLoading: false };
     case "SET_PAPERS_LOADING":
@@ -39,6 +57,21 @@ function reducer(state, action) {
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (state.theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    try {
+      localStorage.setItem("theme", state.theme);
+    } catch {
+      // ignore storage access errors
+    }
+  }, [state.theme]);
+
   return (
     <AppContext.Provider value={state}>
       <DispatchContext.Provider value={dispatch}>{children}</DispatchContext.Provider>
