@@ -48,7 +48,6 @@ def create_app() -> Flask:
     app = Flask(__name__)
     CORS(app)
 
-    app.config["MAX_CONTENT_LENGTH"] = settings.MAX_UPLOAD_TOTAL_MB * 1024 * 1024
     app.config["UPLOAD_FOLDER"] = settings.UPLOAD_DIRECTORY
 
     register_error_handlers(app)
