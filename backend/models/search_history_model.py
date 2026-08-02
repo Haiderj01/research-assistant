@@ -24,8 +24,23 @@ def create_search_entry(
     return doc
 
 
-def get_search_history(limit: int = 50) -> list[dict]:
+def _to_object_id(value: str):
+    if not value:
+        return None
+    try:
+        return ObjectId(value)
+    except Exception:
+        return None
+
+
+def get_search_history(limit: int = 50, user_id: str = None) -> list[dict]:
     coll = DatabaseService.get_collection("search_history")
     if coll is None:
         return []
-    return list(coll.find().sort("created_at", -1).limit(limit))
+    query = {}
+    uid = _to_object_id(user_id)
+    if user_id and uid is None:
+        return []
+    if uid is not None:
+        query["user_id"] = uid
+    return list(coll.find(query).sort("created_at", -1).limit(limit))

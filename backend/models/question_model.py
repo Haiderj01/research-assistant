@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from bson import ObjectId
 from backend.services.database_service import DatabaseService
+from backend.models import conversation_model
 
 
 def create_question(
@@ -24,10 +25,14 @@ def create_question(
     return doc
 
 
-def get_questions_by_conversation(conversation_id: str) -> list[dict]:
+def get_questions_by_conversation(conversation_id: str, user_id: str = None) -> list[dict]:
     coll = DatabaseService.get_collection("questions")
     if coll is None:
         return []
+    if user_id:
+        conv = conversation_model.get_conversation(conversation_id, user_id=user_id)
+        if not conv:
+            return []
     return list(
         coll.find({"conversation_id": ObjectId(conversation_id)})
         .sort("created_at", 1)

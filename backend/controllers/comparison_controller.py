@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import request, jsonify, g
 from bson import ObjectId
 from backend.middlewares.error_handler import AppError
 from backend.models import paper_model, chunk_model
@@ -40,9 +40,11 @@ def handle_compare():
                 code="INVALID_DIMENSIONS",
             )
 
+    user_id = getattr(g, "user_id", None)
+
     papers = []
     for pid in paper_ids:
-        paper = paper_model.get_paper(pid)
+        paper = paper_model.get_paper(pid, user_id=user_id)
         if not paper:
             raise AppError(
                 message=f"No paper found with ID '{pid}'.",

@@ -27,20 +27,40 @@ def create_paper(
     return doc
 
 
-def get_paper(paper_id: str) -> dict:
+def _to_object_id(value: str):
+    if not value:
+        return None
+    try:
+        return ObjectId(value)
+    except Exception:
+        return None
+
+
+def get_paper(paper_id: str, user_id: str = None) -> dict:
     coll = DatabaseService.get_collection("papers")
     if coll is None:
         return None
-    return coll.find_one({"_id": ObjectId(paper_id)})
+    query = {"_id": ObjectId(paper_id)}
+    uid = _to_object_id(user_id)
+    if user_id and uid is None:
+        return None
+    if uid is not None:
+        query["user_id"] = uid
+    return coll.find_one(query)
 
 
-def get_all_papers(status: str = None) -> list[dict]:
+def get_all_papers(status: str = None, user_id: str = None) -> list[dict]:
     coll = DatabaseService.get_collection("papers")
     if coll is None:
         return []
     query = {}
     if status:
         query["status"] = status
+    uid = _to_object_id(user_id)
+    if user_id and uid is None:
+        return []
+    if uid is not None:
+        query["user_id"] = uid
     return list(coll.find(query).sort("upload_date", -1))
 
 
@@ -52,9 +72,15 @@ def update_paper(paper_id: str, updates: dict) -> bool:
     return result.modified_count > 0
 
 
-def delete_paper(paper_id: str) -> bool:
+def delete_paper(paper_id: str, user_id: str = None) -> bool:
     coll = DatabaseService.get_collection("papers")
     if coll is None:
         return False
-    result = coll.delete_one({"_id": ObjectId(paper_id)})
+    query = {"_id": ObjectId(paper_id)}
+    uid = _to_object_id(user_id)
+    if user_id and uid is None:
+        return False
+    if uid is not None:
+        query["user_id"] = uid
+    result = coll.delete_one(query)
     return result.deleted_count > 0

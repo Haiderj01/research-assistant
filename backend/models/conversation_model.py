@@ -20,18 +20,39 @@ def create_conversation(paper_ids: list[str], title: str = "", user_id: str = No
     return doc
 
 
-def get_conversation(conversation_id: str) -> dict:
+def _to_object_id(value: str):
+    if not value:
+        return None
+    try:
+        return ObjectId(value)
+    except Exception:
+        return None
+
+
+def get_conversation(conversation_id: str, user_id: str = None) -> dict:
     coll = DatabaseService.get_collection("conversations")
     if coll is None:
         return None
-    return coll.find_one({"_id": ObjectId(conversation_id)})
+    query = {"_id": ObjectId(conversation_id)}
+    uid = _to_object_id(user_id)
+    if user_id and uid is None:
+        return None
+    if uid is not None:
+        query["user_id"] = uid
+    return coll.find_one(query)
 
 
-def get_all_conversations(limit: int = 50) -> list[dict]:
+def get_all_conversations(limit: int = 50, user_id: str = None) -> list[dict]:
     coll = DatabaseService.get_collection("conversations")
     if coll is None:
         return []
-    return list(coll.find().sort("updated_at", -1).limit(limit))
+    query = {}
+    uid = _to_object_id(user_id)
+    if user_id and uid is None:
+        return []
+    if uid is not None:
+        query["user_id"] = uid
+    return list(coll.find(query).sort("updated_at", -1).limit(limit))
 
 
 def update_conversation(conversation_id: str) -> bool:

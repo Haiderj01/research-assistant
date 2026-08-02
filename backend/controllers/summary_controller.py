@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import request, jsonify, g
 from bson import ObjectId
 from backend.middlewares.error_handler import AppError
 from backend.models import paper_model, chunk_model
@@ -31,7 +31,8 @@ def handle_summarize():
 
     force = body.get("force_regenerate", False)
 
-    paper = paper_model.get_paper(paper_id)
+    user_id = getattr(g, "user_id", None)
+    paper = paper_model.get_paper(paper_id, user_id=user_id)
     if not paper:
         raise AppError(
             message=f"No paper found with ID '{paper_id}'.",

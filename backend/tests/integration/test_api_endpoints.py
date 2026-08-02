@@ -2,8 +2,11 @@ import io
 import json
 from unittest.mock import patch, MagicMock
 import pytest
+from bson import ObjectId
 from backend.app import create_app
 from backend.services import auth_service
+from backend.models import paper_model, conversation_model, search_history_model, question_model
+from backend.services.database_service import DatabaseService
 
 
 @pytest.fixture(autouse=True)
@@ -92,8 +95,14 @@ class TestUpload:
 
 
 class TestAsk:
+    @patch("backend.models.paper_model.get_paper")
     @patch("backend.services.rag_service.answer_query")
-    def test_ask_question_success(self, mock_answer, client):
+    def test_ask_question_success(self, mock_answer, mock_paper, client):
+        mock_paper.return_value = {
+            "_id": "507f1f77bcf86cd799439011",
+            "title": "Paper 1",
+            "status": "processed",
+        }
         mock_answer.return_value = {
             "answer": "This is the answer.",
             "sources": [
@@ -122,7 +131,13 @@ class TestAsk:
         resp = client.post("/api/v1/ask", data="not-json", content_type="application/json")
         assert resp.status_code == 400
 
-    def test_ask_empty_question(self, client):
+    @patch("backend.models.paper_model.get_paper")
+    def test_ask_empty_question(self, mock_paper, client):
+        mock_paper.return_value = {
+            "_id": "507f1f77bcf86cd799439011",
+            "title": "Paper 1",
+            "status": "processed",
+        }
         resp = client.post(
             "/api/v1/ask",
             json={"question": "", "paper_ids": ["507f1f77bcf86cd799439011"]},
@@ -255,7 +270,7 @@ class TestCompare:
     @patch("backend.models.chunk_model.get_chunks_by_paper")
     @patch("backend.services.gemini_service.generate_comparison")
     def test_compare_success(self, mock_gen, mock_chunks, mock_paper, client):
-        def get_paper_side_effect(pid):
+        def get_paper_side_effect(pid, user_id=None):
             return {
                 "_id": pid,
                 "title": f"Paper {pid[-4:]}",
@@ -293,3 +308,139 @@ class TestCompare:
         )
         assert resp.status_code == 400
         assert resp.get_json()["error"]["code"] == "INVALID_IDS"
+
+
+USER_A = "507f1f77bcf86cd799439011"
+USER_B = "507f1f77bcf86cd799439099"
+
+
+class TestOwnershipScoping:
+    @pytest.fixture
+    def user_b_client(self, app):
+        token = auth_service.generate_token(USER_B)
+        return _AuthedTestClient(app.test_client(), token)
+
+    @pytest.fixture(autouse=True)
+    def clean_data(self, app):
+        yield
+        db = DatabaseService.get_db()
+        if db is not None:
+            for name in ("papers", "conversations", "questions", "search_history"):
+                db[name].delete_many({})
+
+    def test_user_cannot_read_other_users_paper(self, client, user_b_client):
+        paper = paper_model.create_paper(
+            title="Mine", filename="mine.pdf", file_path="/tmp/mine.pdf", user_id=USER_A
+        )
+        pid = str(paper["_id"])
+
+        resp = client.get(f"/api/v1/paper/{pid}")
+        assert resp.status_code == 200
+
+        resp = user_b_client.get(f"/api/v1/paper/{pid}")
+        assert resp.status_code == 404
+        assert resp.get_json()["error"]["code"] == "PAPER_NOT_FOUND"
+
+    def test_user_cannot_list_other_users_papers(self, client, user_b_client):
+        paper_model.create_paper(
+            title="Mine", filename="mine.pdf", file_path="/tmp/mine.pdf", user_id=USER_A
+        )
+        paper_model.create_paper(
+            title="Theirs", filename="theirs.pdf", file_path="/tmp/theirs.pdf", user_id=USER_B
+        )
+
+        resp = client.get("/api/v1/papers")
+        assert resp.status_code == 200
+        titles = [p["title"] for p in resp.get_json()["data"]["papers"]]
+        assert "Mine" in titles
+        assert "Theirs" not in titles
+
+    def test_user_cannot_delete_other_users_paper(self, client, user_b_client):
+        paper = paper_model.create_paper(
+            title="Mine", filename="mine.pdf", file_path="/tmp/mine.pdf", user_id=USER_A
+        )
+        pid = str(paper["_id"])
+
+        resp = user_b_client.delete(f"/api/v1/paper/{pid}")
+        assert resp.status_code == 404
+        assert paper_model.get_paper(pid) is not None
+
+        resp = client.delete(f"/api/v1/paper/{pid}")
+        assert resp.status_code == 200
+        assert paper_model.get_paper(pid) is None
+
+    def test_user_cannot_get_other_users_conversation(self, client, user_b_client):
+        conv = conversation_model.create_conversation(
+            paper_ids=[str(ObjectId())], title="Theirs", user_id=USER_B
+        )
+        cid = str(conv["_id"])
+
+        resp = client.get(f"/api/v1/conversation/{cid}/messages")
+        assert resp.status_code == 404
+        assert resp.get_json()["error"]["code"] == "CONVERSATION_NOT_FOUND"
+
+    def test_user_cannot_rename_other_users_conversation(self, client, user_b_client):
+        conv = conversation_model.create_conversation(
+            paper_ids=[str(ObjectId())], title="Theirs", user_id=USER_B
+        )
+        cid = str(conv["_id"])
+
+        resp = client.patch(
+            f"/api/v1/conversation/{cid}",
+            json={"title": "Hijacked"},
+        )
+        assert resp.status_code == 404
+
+    def test_history_scoped_to_user(self, client, user_b_client):
+        conversation_model.create_conversation(
+            paper_ids=[str(ObjectId())], title="Theirs", user_id=USER_B
+        )
+        search_history_model.create_search_entry(
+            query_text="theirs", paper_ids=[], result_chunk_ids=[], user_id=USER_B
+        )
+
+        resp = client.get("/api/v1/history")
+        assert resp.status_code == 200
+        data = resp.get_json()["data"]
+        assert data["conversations"] == []
+        assert data["search_history"] == []
+
+    def test_ask_rejects_other_users_paper(self, client, user_b_client):
+        paper = paper_model.create_paper(
+            title="Theirs", filename="theirs.pdf", file_path="/tmp/theirs.pdf", user_id=USER_B
+        )
+        pid = str(paper["_id"])
+
+        resp = client.post(
+            "/api/v1/ask",
+            json={"question": "What is this?", "paper_ids": [pid]},
+        )
+        assert resp.status_code == 404
+        assert resp.get_json()["error"]["code"] == "PAPER_NOT_FOUND"
+
+    def test_compare_rejects_other_users_paper(self, client, user_b_client):
+        paper_a = paper_model.create_paper(
+            title="Mine", filename="mine.pdf", file_path="/tmp/mine.pdf", user_id=USER_A
+        )
+        paper_b = paper_model.create_paper(
+            title="Theirs", filename="theirs.pdf", file_path="/tmp/theirs.pdf", user_id=USER_B
+        )
+        paper_model.update_paper(str(paper_a["_id"]), {"status": "processed"})
+        paper_model.update_paper(str(paper_b["_id"]), {"status": "processed"})
+
+        resp = client.post(
+            "/api/v1/compare",
+            json={"paper_ids": [str(paper_a["_id"]), str(paper_b["_id"])]},
+        )
+        assert resp.status_code == 404
+        assert resp.get_json()["error"]["code"] == "PAPER_NOT_FOUND"
+
+    def test_summarize_rejects_other_users_paper(self, client, user_b_client):
+        paper = paper_model.create_paper(
+            title="Theirs", filename="theirs.pdf", file_path="/tmp/theirs.pdf", user_id=USER_B
+        )
+        pid = str(paper["_id"])
+
+        resp = client.post("/api/v1/summarize", json={"paper_id": pid})
+        assert resp.status_code == 404
+        assert resp.get_json()["error"]["code"] == "PAPER_NOT_FOUND"

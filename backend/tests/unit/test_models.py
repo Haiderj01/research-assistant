@@ -59,6 +59,43 @@ class TestPaperModel:
         assert paper_model.delete_paper(pid) is True
         assert paper_model.get_paper(pid) is None
 
+    def test_get_paper_scoped_by_user(self):
+        owner = str(ObjectId())
+        other = str(ObjectId())
+        created = paper_model.create_paper(
+            title="Owned", filename="owned.pdf", file_path="/tmp/owned.pdf",
+            user_id=owner,
+        )
+        pid = str(created["_id"])
+        assert paper_model.get_paper(pid, user_id=owner) is not None
+        assert paper_model.get_paper(pid, user_id=other) is None
+
+    def test_get_all_papers_scoped_by_user(self):
+        owner = str(ObjectId())
+        other = str(ObjectId())
+        paper_model.create_paper(
+            title="A", filename="a.pdf", file_path="/tmp/a.pdf", user_id=owner
+        )
+        paper_model.create_paper(
+            title="B", filename="b.pdf", file_path="/tmp/b.pdf", user_id=other
+        )
+        owner_papers = paper_model.get_all_papers(user_id=owner)
+        assert len(owner_papers) == 1
+        assert owner_papers[0]["title"] == "A"
+
+    def test_delete_paper_scoped_by_user(self):
+        owner = str(ObjectId())
+        other = str(ObjectId())
+        created = paper_model.create_paper(
+            title="Owned", filename="owned.pdf", file_path="/tmp/owned.pdf",
+            user_id=owner,
+        )
+        pid = str(created["_id"])
+        assert paper_model.delete_paper(pid, user_id=other) is False
+        assert paper_model.get_paper(pid, user_id=owner) is not None
+        assert paper_model.delete_paper(pid, user_id=owner) is True
+        assert paper_model.get_paper(pid) is None
+
 
 class TestChunkModel:
     def test_create_chunks(self):
@@ -133,6 +170,29 @@ class TestConversationModel:
         convs = conversation_model.get_all_conversations()
         assert len(convs) == 2
 
+    def test_get_conversation_scoped_by_user(self):
+        owner = str(ObjectId())
+        other = str(ObjectId())
+        conv = conversation_model.create_conversation(
+            paper_ids=[str(ObjectId())], title="Owned", user_id=owner
+        )
+        cid = str(conv["_id"])
+        assert conversation_model.get_conversation(cid, user_id=owner) is not None
+        assert conversation_model.get_conversation(cid, user_id=other) is None
+
+    def test_get_all_conversations_scoped_by_user(self):
+        owner = str(ObjectId())
+        other = str(ObjectId())
+        conversation_model.create_conversation(
+            paper_ids=[str(ObjectId())], title="Mine", user_id=owner
+        )
+        conversation_model.create_conversation(
+            paper_ids=[str(ObjectId())], title="Yours", user_id=other
+        )
+        mine = conversation_model.get_all_conversations(user_id=owner)
+        assert len(mine) == 1
+        assert mine[0]["title"] == "Mine"
+
 
 class TestQuestionModel:
     def test_create_question(self):
@@ -168,6 +228,24 @@ class TestQuestionModel:
         assert len(questions) == 2
         assert questions[0]["question_text"] == "Q1"
 
+    def test_get_questions_scoped_by_conversation_owner(self):
+        owner = str(ObjectId())
+        other = str(ObjectId())
+        conv = conversation_model.create_conversation(
+            paper_ids=[str(ObjectId())], user_id=owner
+        )
+        question_model.create_question(
+            conversation_id=str(conv["_id"]),
+            question_text="Q1", answer_text="A1",
+            source_chunk_ids=[],
+        )
+        assert len(question_model.get_questions_by_conversation(
+            str(conv["_id"]), user_id=owner
+        )) == 1
+        assert question_model.get_questions_by_conversation(
+            str(conv["_id"]), user_id=other
+        ) == []
+
 
 class TestSearchHistoryModel:
     def test_create_search_entry(self):
@@ -188,3 +266,16 @@ class TestSearchHistoryModel:
         )
         history = search_history_model.get_search_history()
         assert len(history) == 2
+
+    def test_get_search_history_scoped_by_user(self):
+        owner = str(ObjectId())
+        other = str(ObjectId())
+        search_history_model.create_search_entry(
+            query_text="mine", paper_ids=[], result_chunk_ids=[], user_id=owner,
+        )
+        search_history_model.create_search_entry(
+            query_text="yours", paper_ids=[], result_chunk_ids=[], user_id=other,
+        )
+        history = search_history_model.get_search_history(user_id=owner)
+        assert len(history) == 1
+        assert history[0]["query_text"] == "mine"

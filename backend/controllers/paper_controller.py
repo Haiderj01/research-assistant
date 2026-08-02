@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import request, jsonify, g
 from bson import ObjectId
 from backend.middlewares.error_handler import AppError
 from backend.models import paper_model, chunk_model
@@ -15,7 +15,8 @@ def list_papers():
             code="INVALID_STATUS",
         )
 
-    papers = paper_model.get_all_papers(status=status)
+    user_id = getattr(g, "user_id", None)
+    papers = paper_model.get_all_papers(status=status, user_id=user_id)
     papers_data = []
     for p in papers:
         papers_data.append({
@@ -41,7 +42,8 @@ def get_paper(paper_id: str):
             code="INVALID_ID",
         )
 
-    paper = paper_model.get_paper(paper_id)
+    user_id = getattr(g, "user_id", None)
+    paper = paper_model.get_paper(paper_id, user_id=user_id)
     if not paper:
         raise AppError(
             message=f"No paper found with ID '{paper_id}'.",
@@ -76,7 +78,8 @@ def delete_paper(paper_id: str):
             code="INVALID_ID",
         )
 
-    paper = paper_model.get_paper(paper_id)
+    user_id = getattr(g, "user_id", None)
+    paper = paper_model.get_paper(paper_id, user_id=user_id)
     if not paper:
         raise AppError(
             message=f"No paper found with ID '{paper_id}'.",
@@ -90,7 +93,7 @@ def delete_paper(paper_id: str):
         vector_store.remove_vectors(vector_ids)
 
     chunk_model.delete_chunks_by_paper(paper_id)
-    paper_model.delete_paper(paper_id)
+    paper_model.delete_paper(paper_id, user_id=user_id)
 
     logger.info(f"Paper {paper_id} and associated data deleted")
 

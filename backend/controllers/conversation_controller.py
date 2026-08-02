@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import request, jsonify, g
 from bson import ObjectId
 from backend.middlewares.error_handler import AppError
 from backend.models import conversation_model, question_model
@@ -11,6 +11,8 @@ def rename_conversation(conversation_id: str):
             status_code=400,
             code="INVALID_ID",
         )
+
+    user_id = getattr(g, "user_id", None)
 
     body = request.get_json(silent=True)
     if body is None:
@@ -28,7 +30,7 @@ def rename_conversation(conversation_id: str):
             code="MISSING_TITLE",
         )
 
-    conv = conversation_model.get_conversation(conversation_id)
+    conv = conversation_model.get_conversation(conversation_id, user_id=user_id)
     if not conv:
         raise AppError(
             message=f"No conversation found with ID '{conversation_id}'.",
@@ -53,7 +55,9 @@ def get_conversation_messages(conversation_id: str):
             code="INVALID_ID",
         )
 
-    conv = conversation_model.get_conversation(conversation_id)
+    user_id = getattr(g, "user_id", None)
+
+    conv = conversation_model.get_conversation(conversation_id, user_id=user_id)
     if not conv:
         raise AppError(
             message=f"No conversation found with ID '{conversation_id}'.",
@@ -61,7 +65,7 @@ def get_conversation_messages(conversation_id: str):
             code="CONVERSATION_NOT_FOUND",
         )
 
-    questions = question_model.get_questions_by_conversation(conversation_id)
+    questions = question_model.get_questions_by_conversation(conversation_id, user_id=user_id)
     messages = []
     for q in questions:
         messages.append({"role": "user", "content": q["question_text"]})
