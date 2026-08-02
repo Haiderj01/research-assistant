@@ -43,7 +43,7 @@ export default function Sidebar() {
       <div className="p-2 lg:p-3 border-t border-sidebar-border space-y-1">
         {user && (
           <div
-            className="px-3 py-2 text-xs text-sidebar-text truncate hidden lg:block"
+            className="px-3 py-2 text-xs text-sidebar-text truncate text-center hidden lg:block"
             title={user.name || user.email}
           >
             {user.name || user.email}
