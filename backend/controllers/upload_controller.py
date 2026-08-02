@@ -1,10 +1,11 @@
-from flask import request, jsonify
+from flask import request, jsonify, g
 from backend.middlewares.error_handler import AppError
 from backend.services import ingestion_service
 from backend.utils.logger import logger
 
 
 def handle_upload():
+    user_id = getattr(g, "user_id", None)
     if "files" not in request.files:
         raise AppError(
             message="No files provided. Attach at least one PDF file under the 'files' field.",
@@ -27,7 +28,7 @@ def handle_upload():
         if not file.filename:
             continue
         try:
-            paper = ingestion_service.save_and_queue(file)
+            paper = ingestion_service.save_and_queue(file, user_id=user_id)
             processed.append(paper)
         except AppError:
             raise

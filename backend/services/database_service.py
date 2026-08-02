@@ -93,3 +93,4 @@ class DatabaseService:
         cls._db.conversations.create_index([("updated_at", DESCENDING)])
         cls._db.questions.create_index([("conversation_id", ASCENDING)])
         cls._db.search_history.create_index([("created_at", DESCENDING)])
+        cls._db.users.create_index([("email", ASCENDING)], unique=True)

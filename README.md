@@ -50,6 +50,7 @@ Variables go in `.env` at the project root:
 | Variable | Default | Description |
 |---|---|---|
 | `GEMINI_API_KEY` | — | Google Gemini API key **(required)** |
+| `JWT_SECRET_KEY` | — | Secret used to sign JWT auth tokens **(required)** |
 | `APPLICATION_PORT` | `5000` | Backend server port |
 | `DATABASE_URL` | `mongodb://localhost:27017/research_assistant` | MongoDB connection string (optional — uses in-memory mock if unavailable) |
 | `DEBUG_MODE` | `false` | Enables Flask debug mode |
@@ -62,6 +63,8 @@ All endpoints are prefixed with `/api/v1/`.
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/health` | System health check |
+| `POST` | `/auth/register` | Create an account |
+| `POST` | `/auth/login` | Log in and receive a JWT |
 | `POST` | `/upload` | Upload and auto-process PDF(s) |
 | `POST` | `/ask` | Ask a question (RAG pipeline) |
 | `GET` | `/papers` | List uploaded papers |

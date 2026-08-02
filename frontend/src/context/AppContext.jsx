@@ -1,7 +1,10 @@
-import { createContext, useContext, useEffect, useReducer } from "react";
+import { createContext, useContext, useEffect, useReducer, useCallback } from "react";
+import { login as loginApi, register as registerApi } from "../api/auth";
+import { setUnauthorizedHandler, getStoredToken, clearStoredToken } from "../api/client";
 
 const AppContext = createContext(null);
 const DispatchContext = createContext(null);
+const AuthActionsContext = createContext(null);
 
 function getInitialTheme() {
   try {
@@ -16,8 +19,17 @@ function getInitialTheme() {
   return "light";
 }
 
+function getInitialToken() {
+  return getStoredToken();
+}
+
 const initialState = {
   theme: getInitialTheme(),
+  user: null,
+  token: getInitialToken(),
+  authLoading: false,
+  authError: null,
+  authModalOpen: false,
   papers: [],
   papersLoading: false,
   conversations: [],
@@ -32,6 +44,25 @@ function reducer(state, action) {
       return { ...state, theme: state.theme === "dark" ? "light" : "dark" };
     case "SET_THEME":
       return { ...state, theme: action.payload };
+    case "AUTH_LOADING":
+      return { ...state, authLoading: true, authError: null };
+    case "AUTH_SUCCESS":
+      return {
+        ...state,
+        user: action.payload.user,
+        token: action.payload.token,
+        authLoading: false,
+        authError: null,
+        authModalOpen: false,
+      };
+    case "AUTH_ERROR":
+      return { ...state, authLoading: false, authError: action.payload };
+    case "AUTH_LOGOUT":
+      return { ...state, user: null, token: null, authError: null, authModalOpen: false };
+    case "OPEN_AUTH_MODAL":
+      return { ...state, authModalOpen: true };
+    case "CLOSE_AUTH_MODAL":
+      return { ...state, authModalOpen: false, authError: null };
     case "SET_PAPERS":
       return { ...state, papers: action.payload, papersLoading: false };
     case "SET_PAPERS_LOADING":
@@ -72,9 +103,74 @@ export function AppProvider({ children }) {
     }
   }, [state.theme]);
 
+  const applyAuth = useCallback(
+    (result) => {
+      try {
+        localStorage.setItem("auth_token", result.token);
+      } catch {
+        // ignore storage access errors
+      }
+      dispatch({ type: "AUTH_SUCCESS", payload: result });
+    },
+    [],
+  );
+
+  const login = useCallback(
+    async (email, password) => {
+      dispatch({ type: "AUTH_LOADING" });
+      try {
+        const res = await loginApi(email, password);
+        applyAuth({ token: res.data.token, user: res.data.user });
+      } catch (err) {
+        dispatch({ type: "AUTH_ERROR", payload: err.message });
+        throw err;
+      }
+    },
+    [applyAuth],
+  );
+
+  const register = useCallback(
+    async (email, password) => {
+      dispatch({ type: "AUTH_LOADING" });
+      try {
+        const res = await registerApi(email, password);
+        applyAuth({ token: res.data.token, user: res.data.user });
+      } catch (err) {
+        dispatch({ type: "AUTH_ERROR", payload: err.message });
+        throw err;
+      }
+    },
+    [applyAuth],
+  );
+
+  const logout = useCallback(() => {
+    clearStoredToken();
+    dispatch({ type: "AUTH_LOGOUT" });
+  }, []);
+
+  const openAuthModal = useCallback(() => {
+    dispatch({ type: "OPEN_AUTH_MODAL" });
+  }, []);
+
+  const closeAuthModal = useCallback(() => {
+    dispatch({ type: "CLOSE_AUTH_MODAL" });
+  }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      dispatch({ type: "AUTH_LOGOUT" });
+      dispatch({ type: "OPEN_AUTH_MODAL" });
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
+
+  const authActions = { login, register, logout, openAuthModal, closeAuthModal };
+
   return (
     <AppContext.Provider value={state}>
-      <DispatchContext.Provider value={dispatch}>{children}</DispatchContext.Provider>
+      <AuthActionsContext.Provider value={authActions}>
+        <DispatchContext.Provider value={dispatch}>{children}</DispatchContext.Provider>
+      </AuthActionsContext.Provider>
     </AppContext.Provider>
   );
 }
@@ -88,5 +184,11 @@ export function useAppState() {
 export function useAppDispatch() {
   const ctx = useContext(DispatchContext);
   if (!ctx) throw new Error("useAppDispatch must be used within AppProvider");
+  return ctx;
+}
+
+export function useAuthActions() {
+  const ctx = useContext(AuthActionsContext);
+  if (!ctx) throw new Error("useAuthActions must be used within AppProvider");
   return ctx;
 }

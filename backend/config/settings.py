@@ -16,6 +16,7 @@ def _resolve_path(env_key: str, default: str) -> str:
 class Settings:
     GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
     GEMINI_MODEL_NAME: str = os.getenv("GEMINI_MODEL_NAME", "gemini-3.5-flash")
+    JWT_SECRET_KEY: str | None = os.getenv("JWT_SECRET_KEY")
     UPLOAD_DIRECTORY: str = _resolve_path("UPLOAD_DIRECTORY", "uploads")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "mongodb://localhost:27017/research_assistant")
     VECTOR_STORE_PATH: str = _resolve_path("VECTOR_STORE_PATH", "vector_store")
@@ -35,6 +36,8 @@ class Settings:
         missing = []
         if not self.GEMINI_API_KEY:
             missing.append("GEMINI_API_KEY")
+        if not self.JWT_SECRET_KEY:
+            missing.append("JWT_SECRET_KEY")
         if missing:
             raise RuntimeError(
                 f"Missing required environment variables: {', '.join(missing)}. "

@@ -11,6 +11,7 @@ def answer_query(
     paper_ids: list[str],
     conversation_id: str = None,
     top_k: int = None,
+    user_id: str = None,
 ) -> dict:
     """Run the full RAG pipeline for a user question.
 
@@ -27,6 +28,7 @@ def answer_query(
         paper_ids: Papers to scope the answer to.
         conversation_id: Existing conversation ID, or None to create new.
         top_k: Number of chunks to retrieve (default from settings).
+        user_id: The authenticated user's ID, attached to created records.
 
     Returns:
         A dict with keys:
@@ -106,7 +108,9 @@ def answer_query(
         conversation_model.update_conversation(conversation_id)
     else:
         conv_title = question[:80] + ("…" if len(question) > 80 else "")
-        conv = conversation_model.create_conversation(paper_ids=paper_ids, title=conv_title)
+        conv = conversation_model.create_conversation(
+            paper_ids=paper_ids, title=conv_title, user_id=user_id
+        )
         conversation_id = str(conv["_id"]) if conv else ""
     logger.debug(f"Using conversation_id={conversation_id}")
 
@@ -121,6 +125,7 @@ def answer_query(
             query_text=question,
             paper_ids=paper_ids,
             result_chunk_ids=[s["chunk_mongo_id"] for s in source_chunks],
+            user_id=user_id,
         )
 
     logger.info(f"RAG answer generated ({len(source_chunks)} sources, {len(context)} chars)")

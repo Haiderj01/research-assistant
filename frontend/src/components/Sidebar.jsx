@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { useAppDispatch, useAppState } from "../context/AppContext";
+import { useAppDispatch, useAppState, useAuthActions } from "../context/AppContext";
 
 const links = [
   { to: "/", label: "Upload", icon: "↑" },
@@ -10,8 +10,9 @@ const links = [
 ];
 
 export default function Sidebar() {
-  const { theme } = useAppState();
+  const { theme, user } = useAppState();
   const dispatch = useAppDispatch();
+  const { logout } = useAuthActions();
   const isDark = theme === "dark";
 
   return (
@@ -38,7 +39,12 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="p-3 border-t border-sidebar-border">
+      <div className="p-3 border-t border-sidebar-border space-y-1">
+        {user && (
+          <div className="px-3 py-2 text-xs text-sidebar-text truncate" title={user.email}>
+            {user.email}
+          </div>
+        )}
         <button
           type="button"
           onClick={() => dispatch({ type: "TOGGLE_THEME" })}
@@ -48,6 +54,17 @@ export default function Sidebar() {
           <span>{isDark ? "☀️" : "🌙"}</span>
           {isDark ? "Light mode" : "Dark mode"}
         </button>
+        {user && (
+          <button
+            type="button"
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-text hover:bg-sidebar-item-hover transition-colors"
+            title="Log out"
+          >
+            <span>⏻</span>
+            Log out
+          </button>
+        )}
       </div>
     </aside>
   );

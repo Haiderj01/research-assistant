@@ -1,9 +1,10 @@
-from flask import request, jsonify
+from flask import request, jsonify, g
 from backend.middlewares.error_handler import AppError
 from backend.services import rag_service
 
 
 def handle_ask():
+    user_id = getattr(g, "user_id", None)
     body = request.get_json(silent=True)
     if body is None:
         raise AppError(
@@ -20,6 +21,7 @@ def handle_ask():
         question=question,
         paper_ids=paper_ids,
         conversation_id=conversation_id,
+        user_id=user_id,
     )
 
     return jsonify({

@@ -3,6 +3,12 @@ import json
 from unittest.mock import patch, MagicMock
 import pytest
 from backend.app import create_app
+from backend.services import auth_service
+
+
+@pytest.fixture(autouse=True)
+def set_secret(monkeypatch):
+    monkeypatch.setattr(auth_service.settings, "JWT_SECRET_KEY", "test-secret-key")
 
 
 @pytest.fixture
@@ -12,9 +18,36 @@ def app():
     return application
 
 
+class _AuthedTestClient:
+    """Wraps a Flask test client to attach a valid JWT to every request."""
+
+    def __init__(self, inner, token):
+        self._inner = inner
+        self._headers = {"Authorization": f"Bearer {token}"}
+
+    def _merge(self, kwargs):
+        headers = dict(kwargs.get("headers") or {})
+        headers.setdefault("Authorization", self._headers["Authorization"])
+        kwargs["headers"] = headers
+        return kwargs
+
+    def get(self, *args, **kwargs):
+        return self._inner.get(*args, **self._merge(kwargs))
+
+    def post(self, *args, **kwargs):
+        return self._inner.post(*args, **self._merge(kwargs))
+
+    def delete(self, *args, **kwargs):
+        return self._inner.delete(*args, **self._merge(kwargs))
+
+    def patch(self, *args, **kwargs):
+        return self._inner.patch(*args, **self._merge(kwargs))
+
+
 @pytest.fixture
 def client(app):
-    return app.test_client()
+    token = auth_service.generate_token("507f1f77bcf86cd799439011")
+    return _AuthedTestClient(app.test_client(), token)
 
 
 class TestHealth:
@@ -27,7 +60,7 @@ class TestHealth:
 
 
 class TestUpload:
-    @patch("backend.services.ingestion_service.process_upload")
+    @patch("backend.services.ingestion_service.save_and_queue")
     def test_upload_pdf_success(self, mock_process, client):
         mock_process.return_value = {
             "_id": "507f1f77bcf86cd799439011",

@@ -12,6 +12,7 @@ from backend.routes.history_routes import history_bp
 from backend.routes.conversation_routes import conversation_bp
 from backend.routes.summary_routes import summary_bp
 from backend.routes.comparison_routes import comparison_bp
+from backend.routes.auth_routes import auth_bp
 from backend.utils.logger import logger
 
 
@@ -75,6 +76,7 @@ def create_app() -> Flask:
     app.register_blueprint(summary_bp)
     app.register_blueprint(comparison_bp)
     app.register_blueprint(conversation_bp)
+    app.register_blueprint(auth_bp)
 
     return app
 

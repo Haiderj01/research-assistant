@@ -71,7 +71,7 @@ _worker = threading.Thread(target=_worker_loop, daemon=True)
 _worker.start()
 
 
-def save_and_queue(file) -> dict:
+def save_and_queue(file, user_id: str = None) -> dict:
     """Save the uploaded file and queue background processing.
 
     Returns a paper record immediately with status 'pending'.
@@ -81,6 +81,7 @@ def save_and_queue(file) -> dict:
 
     Args:
         file: A werkzeug FileStorage object from the upload request.
+        user_id: The authenticated user's ID owning the upload, if any.
 
     Returns:
         A dict with the created paper record (status: pending).
@@ -103,6 +104,7 @@ def save_and_queue(file) -> dict:
         title=paper_title,
         filename=original_filename,
         file_path=file_path,
+        user_id=user_id,
     )
     if not paper:
         os.unlink(file_path)

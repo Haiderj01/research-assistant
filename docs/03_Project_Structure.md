@@ -242,6 +242,7 @@ Keeping documentation in a dedicated, numbered `docs/` folder ensures that the p
 |---|---|
 | `GEMINI_API_KEY` | Authenticates requests to the Gemini LLM API for answer generation, summarization, and comparison. |
 | `GEMINI_MODEL_NAME` | Specifies the Gemini model to use (default: `gemini-2.0-flash-lite`). |
+| `JWT_SECRET_KEY` | Secret key used to sign and verify JWT authentication tokens; required for user login/registration. |
 | `UPLOAD_DIRECTORY` | Specifies the file system path where uploaded PDF files are stored prior to and during processing. |
 | `DATABASE_URL` | Specifies the connection string used to connect to the MongoDB metadata database. |
 | `VECTOR_STORE_PATH` | Specifies the file system path where the FAISS vector index is persisted. |
