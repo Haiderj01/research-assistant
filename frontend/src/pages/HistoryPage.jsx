@@ -39,13 +39,22 @@ export default function HistoryPage() {
       {conversationsLoading ? (
         <LoadingSpinner text="Loading history..." />
       ) : conversations.length === 0 ? (
-        <p className="text-secondary text-sm">No conversations yet.</p>
+        <div className="flex flex-col items-center justify-center text-center px-4 py-16">
+          <div className="w-14 h-14 rounded-full bg-accent-soft flex items-center justify-center mb-4">
+            <span className="text-2xl">📋</span>
+          </div>
+          <h3 className="text-lg font-semibold text-primary mb-1">No conversations yet</h3>
+          <p className="text-sm text-muted max-w-sm">
+            Upload a paper and ask a question to get started — your conversation history will
+            appear here.
+          </p>
+        </div>
       ) : (
         <div className="space-y-3">
           {conversations.map((c) => (
             <div
               key={c.id}
-              className="border border-border rounded-xl p-4 bg-surface shadow-sm"
+              className="border border-border rounded-xl p-4 bg-surface shadow-sm transition-shadow hover:shadow-md"
             >
               {editingId === c.id ? (
                 <div className="flex gap-2">
@@ -55,10 +64,10 @@ export default function HistoryPage() {
                     onChange={(e) => setEditValue(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && saveEdit(c.id)}
                     autoFocus
-                    className="flex-1 border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                    className="flex-1 border border-border rounded-lg px-2 py-1 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent"
                   />
-                  <button onClick={() => saveEdit(c.id)} className="text-xs text-accent hover:text-accent-hover">Save</button>
-                  <button onClick={cancelEdit} className="text-xs text-secondary hover:text-primary">Cancel</button>
+                  <button onClick={() => saveEdit(c.id)} className="text-xs font-medium text-accent hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded">Save</button>
+                  <button onClick={cancelEdit} className="text-xs font-medium text-secondary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded">Cancel</button>
                 </div>
               ) : (
                 <div className="flex items-center justify-between">
@@ -71,7 +80,7 @@ export default function HistoryPage() {
                   </h3>
                   <button
                     onClick={(e) => { e.stopPropagation(); startEdit(c); }}
-                    className="shrink-0 ml-2 text-xs text-muted hover:text-primary transition-colors"
+                    className="shrink-0 ml-2 text-xs font-medium text-muted hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded"
                     title="Rename"
                   >
                     Rename

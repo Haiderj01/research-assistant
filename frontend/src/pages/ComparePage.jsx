@@ -46,7 +46,15 @@ export default function ComparePage() {
       {papersLoading ? (
         <LoadingSpinner text="Loading papers..." />
       ) : processed.length === 0 ? (
-        <p className="text-secondary text-sm">Upload and process at least two papers to compare.</p>
+        <div className="flex flex-col items-center justify-center text-center px-4 py-16">
+          <div className="w-14 h-14 rounded-full bg-accent-soft flex items-center justify-center mb-4">
+            <span className="text-2xl">⇄</span>
+          </div>
+          <h3 className="text-lg font-semibold text-primary mb-1">Nothing to compare yet</h3>
+          <p className="text-sm text-muted max-w-sm">
+            Upload and process at least two papers, then return here to compare them side by side.
+          </p>
+        </div>
       ) : (
         <>
           <p className="text-sm text-secondary mb-3">
@@ -58,10 +66,10 @@ export default function ComparePage() {
               <button
                 key={p.id}
                 onClick={() => togglePaper(p.id)}
-                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                className={`text-xs px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
                   selectedIds.includes(p.id)
-                    ? "bg-accent text-white border-accent"
-                    : "bg-surface text-primary border-border hover:border-accent"
+                    ? "bg-accent text-white border-accent hover:bg-accent-hover"
+                    : "bg-surface text-primary border-border hover:border-accent active:bg-surface-hover"
                 }`}
               >
                 {p.title}
@@ -78,30 +86,31 @@ export default function ComparePage() {
               value={dimensions}
               onChange={(e) => setDimensions(e.target.value)}
               placeholder="e.g. dataset, method, results"
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
 
           <button
             onClick={handleCompare}
             disabled={selectedIds.length < 2 || comparing}
-            className="bg-accent text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-accent-hover disabled:opacity-50 transition-colors"
+            className="bg-accent text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-accent-hover active:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 flex items-center gap-2"
           >
+            {comparing && (
+              <span className="w-4 h-4 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+            )}
             {comparing ? "Comparing..." : "Compare"}
           </button>
 
-          {comparing && <LoadingSpinner size="sm" text="Generating comparison..." />}
-
           {error && (
-            <div className="mt-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200">
+            <div className="mt-4 p-3 bg-danger-soft text-danger text-sm rounded-lg border border-danger-border">
               {error}
             </div>
           )}
 
           {result && (
             <div className="mt-6 bg-surface border border-border rounded-xl p-5">
-              <h3 className="font-semibold text-primary mb-3">Comparison Result</h3>
-              <div className="text-sm text-primary whitespace-pre-line">{result}</div>
+              <h3 className="text-lg font-semibold text-primary mb-3">Comparison Result</h3>
+              <div className="text-sm text-primary whitespace-pre-line leading-relaxed">{result}</div>
             </div>
           )}
         </>

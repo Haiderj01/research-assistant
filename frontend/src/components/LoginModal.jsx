@@ -53,7 +53,7 @@ export default function LoginModal({ open, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="text-muted hover:text-primary text-xl leading-none"
+            className="text-muted hover:text-primary text-xl leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded"
             title="Close"
           >
             &times;
@@ -90,7 +90,7 @@ export default function LoginModal({ open, onClose }) {
           </div>
 
           {error && (
-            <p className="text-sm text-red-600" role="alert">
+            <p className="text-sm text-danger" role="alert">
               {error}
             </p>
           )}
@@ -98,8 +98,11 @@ export default function LoginModal({ open, onClose }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-accent text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-accent-hover disabled:opacity-50 transition-colors"
+            className="w-full bg-accent text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-accent-hover active:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 flex items-center justify-center gap-2"
           >
+            {loading && (
+              <span className="w-4 h-4 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+            )}
             {loading
               ? mode === "login"
                 ? "Logging in..."
@@ -117,7 +120,7 @@ export default function LoginModal({ open, onClose }) {
               <button
                 type="button"
                 onClick={() => switchMode("register")}
-                className="text-accent hover:text-accent-hover"
+                className="text-accent hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded"
               >
                 Register
               </button>
@@ -128,7 +131,7 @@ export default function LoginModal({ open, onClose }) {
               <button
                 type="button"
                 onClick={() => switchMode("login")}
-                className="text-accent hover:text-accent-hover"
+                className="text-accent hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded"
               >
                 Log in
               </button>

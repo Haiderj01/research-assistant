@@ -54,7 +54,7 @@ export default function UploadPage() {
       <FileUploader onUpload={handleUpload} loading={uploading} />
 
       {error && (
-        <div className="mt-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200">
+        <div className="mt-4 p-3 bg-danger-soft text-danger text-sm rounded-lg border border-danger-border">
           {error}
         </div>
       )}

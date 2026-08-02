@@ -12,10 +12,10 @@ export default function PaperCard({ paper, onDelete, onSummarize }) {
         <span
           className={`shrink-0 ml-2 text-xs font-medium px-2 py-0.5 rounded-full ${
             paper.status === "processed"
-              ? "bg-green-100 text-green-700"
+              ? "bg-success-soft text-success"
               : paper.status === "failed"
-                ? "bg-red-100 text-red-700"
-                : "bg-yellow-100 text-yellow-700"
+                ? "bg-danger-soft text-danger"
+                : "bg-warning-soft text-warning"
           }`}
         >
           {paper.status}
@@ -34,7 +34,7 @@ export default function PaperCard({ paper, onDelete, onSummarize }) {
         {paper.status === "processed" && onSummarize && (
           <button
             onClick={() => onSummarize(paper.id, paper.title)}
-            className="text-xs text-accent hover:text-accent-hover transition-colors"
+            className="text-xs font-medium text-accent hover:text-accent-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded"
           >
             Summarize
           </button>
@@ -42,7 +42,7 @@ export default function PaperCard({ paper, onDelete, onSummarize }) {
         {onDelete && (
           <button
             onClick={() => onDelete(paper.id)}
-            className="text-xs text-red-600 hover:text-red-800 transition-colors"
+            className="text-xs font-medium text-danger hover:text-danger-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:rounded"
           >
             Delete
           </button>
