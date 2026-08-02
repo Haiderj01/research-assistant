@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useReducer, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { login as loginApi, register as registerApi } from "../api/auth";
 import {
   setUnauthorizedHandler,
@@ -41,7 +42,6 @@ const initialState = {
   token: getInitialToken(),
   authLoading: false,
   authError: null,
-  authModalOpen: false,
   papers: [],
   papersLoading: false,
   conversations: [],
@@ -65,16 +65,11 @@ function reducer(state, action) {
         token: action.payload.token,
         authLoading: false,
         authError: null,
-        authModalOpen: false,
       };
     case "AUTH_ERROR":
       return { ...state, authLoading: false, authError: action.payload };
     case "AUTH_LOGOUT":
-      return { ...state, user: null, token: null, authError: null, authModalOpen: false };
-    case "OPEN_AUTH_MODAL":
-      return { ...state, authModalOpen: true };
-    case "CLOSE_AUTH_MODAL":
-      return { ...state, authModalOpen: false, authError: null };
+      return { ...state, user: null, token: null, authError: null };
     case "SET_PAPERS":
       return { ...state, papers: action.payload, papersLoading: false };
     case "SET_PAPERS_LOADING":
@@ -100,6 +95,7 @@ function reducer(state, action) {
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -156,27 +152,20 @@ export function AppProvider({ children }) {
     clearStoredToken();
     clearStoredUser();
     dispatch({ type: "AUTH_LOGOUT" });
-  }, []);
-
-  const openAuthModal = useCallback(() => {
-    dispatch({ type: "OPEN_AUTH_MODAL" });
-  }, []);
-
-  const closeAuthModal = useCallback(() => {
-    dispatch({ type: "CLOSE_AUTH_MODAL" });
-  }, []);
+    navigate("/");
+  }, [navigate]);
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
       clearStoredToken();
       clearStoredUser();
       dispatch({ type: "AUTH_LOGOUT" });
-      dispatch({ type: "OPEN_AUTH_MODAL" });
+      navigate("/login");
     });
     return () => setUnauthorizedHandler(null);
-  }, []);
+  }, [navigate]);
 
-  const authActions = { login, register, logout, openAuthModal, closeAuthModal };
+  const authActions = { login, register, logout };
 
   return (
     <AppContext.Provider value={state}>

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppState, useAppDispatch } from "../context/AppContext";
 import { uploadPapers as uploadApi } from "../api/uploads";
 import { listPapers, deletePaper } from "../api/papers";
@@ -10,28 +11,34 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [summarizeTarget, setSummarizeTarget] = useState(null);
-  const { papers } = useAppState();
+  const { papers, token } = useAppState();
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (!token) return;
     listPapers()
       .then((res) => dispatch({ type: "SET_PAPERS", payload: res.data.papers }))
       .catch(() => {});
-  }, [dispatch]);
+  }, [token, dispatch]);
 
   const hasPending = papers.some((p) => p.status === "pending" || p.status === "processing");
   useEffect(() => {
-    if (!hasPending) return;
+    if (!token || !hasPending) return;
     const interval = setInterval(() => {
       listPapers()
         .then((res) => dispatch({ type: "SET_PAPERS", payload: res.data.papers }))
         .catch(() => {});
     }, 3000);
     return () => clearInterval(interval);
-  }, [hasPending, dispatch]);
+  }, [token, hasPending, dispatch]);
 
   const handleUpload = useCallback(
     async (files) => {
+      if (!token) {
+        navigate("/login");
+        return;
+      }
       setUploading(true);
       setError(null);
       try {
@@ -44,7 +51,7 @@ export default function UploadPage() {
         setUploading(false);
       }
     },
-    [dispatch],
+    [token, dispatch, navigate],
   );
 
   return (

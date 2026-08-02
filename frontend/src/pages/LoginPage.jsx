@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { useAuthActions } from "../context/AppContext";
+import { Navigate, useNavigate } from "react-router-dom";
+import { useAppState, useAuthActions } from "../context/AppContext";
 
-export default function LoginModal({ open, onClose }) {
+export default function LoginPage() {
   const { login, register } = useAuthActions();
+  const { token } = useAppState();
+  const navigate = useNavigate();
   const [mode, setMode] = useState("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -10,7 +13,7 @@ export default function LoginModal({ open, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  if (!open) return null;
+  if (token) return <Navigate to="/" replace />;
 
   const switchMode = (nextMode) => {
     setMode(nextMode);
@@ -38,7 +41,7 @@ export default function LoginModal({ open, onClose }) {
       setName("");
       setEmail("");
       setPassword("");
-      onClose();
+      navigate("/", { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -47,23 +50,17 @@ export default function LoginModal({ open, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div
-        className="bg-surface rounded-xl shadow-xl max-w-sm w-full mx-4 p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-5">
+    <div className="min-h-screen bg-background text-primary flex items-center justify-center p-4">
+      <div className="bg-surface rounded-xl shadow-xl max-w-sm w-full p-6">
+        <div className="mb-5">
           <h2 className="text-lg font-semibold text-primary">
             {mode === "login" ? "Log in" : "Create account"}
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted hover:text-primary text-xl leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded"
-            title="Close"
-          >
-            &times;
-          </button>
+          <p className="text-sm text-secondary mt-1">
+            {mode === "login"
+              ? "Welcome back to Research Assistant."
+              : "Join Research Assistant to analyze your papers."}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -94,6 +91,7 @@ export default function LoginModal({ open, onClose }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
+              autoComplete="email"
               className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
@@ -108,6 +106,7 @@ export default function LoginModal({ open, onClose }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={mode === "register" ? "At least 8 characters" : "Your password"}
+              autoComplete={mode === "register" ? "new-password" : "current-password"}
               className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>

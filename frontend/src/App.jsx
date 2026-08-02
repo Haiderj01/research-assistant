@@ -6,17 +6,48 @@ import ChatPage from "./pages/ChatPage";
 import ComparePage from "./pages/ComparePage";
 import HistoryPage from "./pages/HistoryPage";
 import DashboardPage from "./pages/DashboardPage";
+import LoginPage from "./pages/LoginPage";
+import RequireAuth from "./components/RequireAuth";
 
 export default function App() {
   return (
     <AppProvider>
       <Routes>
+        <Route path="/login" element={<LoginPage />} />
         <Route element={<AppLayout />}>
           <Route index element={<UploadPage />} />
-          <Route path="chat" element={<ChatPage />} />
-          <Route path="compare" element={<ComparePage />} />
-          <Route path="history" element={<HistoryPage />} />
-          <Route path="dashboard" element={<DashboardPage />} />
+          <Route
+            path="chat"
+            element={
+              <RequireAuth>
+                <ChatPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="compare"
+            element={
+              <RequireAuth>
+                <ComparePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="history"
+            element={
+              <RequireAuth>
+                <HistoryPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="dashboard"
+            element={
+              <RequireAuth>
+                <DashboardPage />
+              </RequireAuth>
+            }
+          />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
