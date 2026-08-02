@@ -25,10 +25,10 @@ def client(app):
     return app.test_client()
 
 
-def _register(client, email="new@example.com", password="password123"):
+def _register(client, email="new@example.com", password="password123", name="Ada Lovelace"):
     return client.post(
         "/api/v1/auth/register",
-        json={"email": email, "password": password},
+        json={"email": email, "password": password, "name": name},
     )
 
 
@@ -40,6 +40,15 @@ class TestRegister:
         assert body["success"] is True
         assert "token" in body["data"]
         assert body["data"]["user"]["email"] == "new@example.com"
+        assert body["data"]["user"]["name"] == "Ada Lovelace"
+
+    def test_register_optional_name(self, client):
+        resp = client.post(
+            "/api/v1/auth/register",
+            json={"email": "noname@example.com", "password": "password123"},
+        )
+        assert resp.status_code == 201
+        assert resp.get_json()["data"]["user"]["name"] == ""
 
     def test_register_duplicate_email(self, client):
         _register(client)

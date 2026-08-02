@@ -28,10 +28,11 @@ def set_secret(monkeypatch):
     monkeypatch.setattr(auth_service.settings, "JWT_SECRET_KEY", TEST_SECRET)
 
 
-def _user(email="test@example.com", uid="507f1f77bcf86cd799439011"):
+def _user(email="test@example.com", uid="507f1f77bcf86cd799439011", name=""):
     return {
         "_id": uid,
         "email": email,
+        "name": name,
         "password_hash": "$2b$12$hashedpasswordvalue",
         "created_at": datetime.now(timezone.utc),
     }
@@ -40,13 +41,42 @@ def _user(email="test@example.com", uid="507f1f77bcf86cd799439011"):
 class TestRegisterUser:
     def test_register_success(self, mock_deps):
         mock_deps["user_model"].get_user_by_email.return_value = None
-        mock_deps["user_model"].create_user.return_value = _user()
+        mock_deps["user_model"].create_user.return_value = _user(name="Ada Lovelace")
 
-        result = auth_service.register_user("test@example.com", "password123")
+        result = auth_service.register_user("test@example.com", "password123", "Ada Lovelace")
 
         assert "token" in result
         assert result["user"]["email"] == "test@example.com"
-        mock_deps["user_model"].create_user.assert_called_once()
+        assert result["user"]["name"] == "Ada Lovelace"
+        mock_deps["user_model"].create_user.assert_called_once_with(
+            "test@example.com", "$2b$12$hashedpasswordvalue", "Ada Lovelace"
+        )
+
+    def test_register_stores_optional_name(self, mock_deps):
+        mock_deps["user_model"].get_user_by_email.return_value = None
+        mock_deps["user_model"].create_user.return_value = _user(name="")
+
+        auth_service.register_user("test@example.com", "password123", "  Jane  ")
+
+        args, _ = mock_deps["user_model"].create_user.call_args
+        assert args[2] == "Jane"
+
+    def test_register_empty_name(self, mock_deps):
+        mock_deps["user_model"].get_user_by_email.return_value = None
+        mock_deps["user_model"].create_user.return_value = _user()
+
+        auth_service.register_user("test@example.com", "password123")
+
+        args, _ = mock_deps["user_model"].create_user.call_args
+        assert args[2] == ""
+
+    def test_register_name_too_long(self, mock_deps):
+        mock_deps["user_model"].get_user_by_email.return_value = None
+
+        with pytest.raises(AppError) as exc:
+            auth_service.register_user("test@example.com", "password123", "x" * 81)
+        assert exc.value.status_code == 422
+        assert exc.value.code == "INVALID_NAME"
 
     def test_register_normalizes_email(self, mock_deps):
         mock_deps["user_model"].get_user_by_email.return_value = None

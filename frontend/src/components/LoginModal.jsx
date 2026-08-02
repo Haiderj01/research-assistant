@@ -4,6 +4,7 @@ import { useAuthActions } from "../context/AppContext";
 export default function LoginModal({ open, onClose }) {
   const { login, register } = useAuthActions();
   const [mode, setMode] = useState("login");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,6 +19,10 @@ export default function LoginModal({ open, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (mode === "register" && !name.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
     if (!email.trim() || !password) {
       setError("Please enter both email and password.");
       return;
@@ -28,8 +33,9 @@ export default function LoginModal({ open, onClose }) {
       if (mode === "login") {
         await login(email.trim(), password);
       } else {
-        await register(email.trim(), password);
+        await register(name.trim(), email.trim(), password);
       }
+      setName("");
       setEmail("");
       setPassword("");
       onClose();
@@ -61,6 +67,23 @@ export default function LoginModal({ open, onClose }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === "register" && (
+            <div>
+              <label htmlFor="auth-name" className="block text-sm text-secondary mb-1">
+                Name
+              </label>
+              <input
+                id="auth-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                autoComplete="name"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent"
+              />
+            </div>
+          )}
+
           <div>
             <label htmlFor="auth-email" className="block text-sm text-secondary mb-1">
               Email

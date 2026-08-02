@@ -3,12 +3,13 @@ from bson import ObjectId
 from backend.services.database_service import DatabaseService
 
 
-def create_user(email: str, password_hash: str) -> dict:
+def create_user(email: str, password_hash: str, name: str = "") -> dict:
     """Create a new user account.
 
     Args:
         email: The user's email address (unique, case-normalized).
         password_hash: The bcrypt-hashed password (never the plaintext).
+        name: The user's display name (optional).
 
     Returns:
         The created user document with an ``_id``, or None if the database
@@ -20,6 +21,7 @@ def create_user(email: str, password_hash: str) -> dict:
     doc = {
         "email": email.lower(),
         "password_hash": password_hash,
+        "name": (name or "").strip(),
         "created_at": datetime.now(timezone.utc),
     }
     result = coll.insert_one(doc)

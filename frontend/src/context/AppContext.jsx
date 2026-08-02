@@ -1,6 +1,14 @@
 import { createContext, useContext, useEffect, useReducer, useCallback } from "react";
 import { login as loginApi, register as registerApi } from "../api/auth";
-import { setUnauthorizedHandler, getStoredToken, clearStoredToken } from "../api/client";
+import {
+  setUnauthorizedHandler,
+  getStoredToken,
+  setStoredToken,
+  clearStoredToken,
+  getStoredUser,
+  setStoredUser,
+  clearStoredUser,
+} from "../api/client";
 
 const AppContext = createContext(null);
 const DispatchContext = createContext(null);
@@ -23,9 +31,13 @@ function getInitialToken() {
   return getStoredToken();
 }
 
+function getInitialUser() {
+  return getStoredUser();
+}
+
 const initialState = {
   theme: getInitialTheme(),
-  user: null,
+  user: getInitialUser(),
   token: getInitialToken(),
   authLoading: false,
   authError: null,
@@ -105,11 +117,8 @@ export function AppProvider({ children }) {
 
   const applyAuth = useCallback(
     (result) => {
-      try {
-        localStorage.setItem("auth_token", result.token);
-      } catch {
-        // ignore storage access errors
-      }
+      setStoredToken(result.token);
+      setStoredUser(result.user);
       dispatch({ type: "AUTH_SUCCESS", payload: result });
     },
     [],
@@ -130,10 +139,10 @@ export function AppProvider({ children }) {
   );
 
   const register = useCallback(
-    async (email, password) => {
+    async (name, email, password) => {
       dispatch({ type: "AUTH_LOADING" });
       try {
-        const res = await registerApi(email, password);
+        const res = await registerApi(name, email, password);
         applyAuth({ token: res.data.token, user: res.data.user });
       } catch (err) {
         dispatch({ type: "AUTH_ERROR", payload: err.message });
@@ -145,6 +154,7 @@ export function AppProvider({ children }) {
 
   const logout = useCallback(() => {
     clearStoredToken();
+    clearStoredUser();
     dispatch({ type: "AUTH_LOGOUT" });
   }, []);
 
@@ -158,6 +168,8 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
+      clearStoredToken();
+      clearStoredUser();
       dispatch({ type: "AUTH_LOGOUT" });
       dispatch({ type: "OPEN_AUTH_MODAL" });
     });

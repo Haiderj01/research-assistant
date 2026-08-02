@@ -14,8 +14,9 @@ def handle_register():
 
     email = body.get("email")
     password = body.get("password")
+    name = body.get("name")
 
-    result = auth_service.register_user(email, password)
+    result = auth_service.register_user(email, password, name)
 
     return jsonify({
         "success": True,

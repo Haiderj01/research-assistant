@@ -10,7 +10,7 @@ const links = [
 ];
 
 export default function Sidebar() {
-  const { theme, user } = useAppState();
+  const { theme, user, token } = useAppState();
   const dispatch = useAppDispatch();
   const { logout } = useAuthActions();
   const isDark = theme === "dark";
@@ -44,9 +44,9 @@ export default function Sidebar() {
         {user && (
           <div
             className="px-3 py-2 text-xs text-sidebar-text truncate hidden lg:block"
-            title={user.email}
+            title={user.name || user.email}
           >
-            {user.email}
+            {user.name || user.email}
           </div>
         )}
         <button
@@ -58,7 +58,7 @@ export default function Sidebar() {
           <span className="w-5 text-center shrink-0">{isDark ? "☀️" : "🌙"}</span>
           <span className="hidden lg:inline">{isDark ? "Light mode" : "Dark mode"}</span>
         </button>
-        {user && (
+        {token && (
           <button
             type="button"
             onClick={logout}

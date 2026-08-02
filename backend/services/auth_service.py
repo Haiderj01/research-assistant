@@ -59,6 +59,28 @@ def _validate_password(password: str) -> None:
         )
 
 
+def _validate_name(name: str) -> str:
+    """Validate and normalize a display name.
+
+    Args:
+        name: The raw display name submitted by the user.
+
+    Returns:
+        The trimmed display name.
+
+    Raises:
+        AppError: If the name is provided but too long.
+    """
+    name = (name or "").strip()
+    if len(name) > 80:
+        raise AppError(
+            message="Name must be at most 80 characters long.",
+            status_code=422,
+            code="INVALID_NAME",
+        )
+    return name
+
+
 def generate_token(user_id: str) -> str:
     """Generate a signed JWT for a user.
 
@@ -126,10 +148,11 @@ def _user_payload(user: dict) -> dict:
         user: A user document from the database.
 
     Returns:
-        A dict with id, email, and created_at.
+        A dict with id, name, email, and created_at.
     """
     return {
         "id": str(user["_id"]),
+        "name": (user.get("name") or "").strip(),
         "email": user["email"],
         "created_at": user["created_at"].isoformat()
         if hasattr(user.get("created_at"), "isoformat")
@@ -137,12 +160,13 @@ def _user_payload(user: dict) -> dict:
     }
 
 
-def register_user(email: str, password: str) -> dict:
+def register_user(email: str, password: str, name: str = "") -> dict:
     """Create a new user account and return an auth token.
 
     Args:
         email: The user's email address.
         password: The user's chosen password.
+        name: The user's display name (optional).
 
     Returns:
         A dict with ``token`` and ``user`` payload.
@@ -152,6 +176,7 @@ def register_user(email: str, password: str) -> dict:
     """
     email = _validate_email(email)
     _validate_password(password)
+    name = _validate_name(name)
 
     existing = user_model.get_user_by_email(email)
     if existing is not None:
@@ -162,7 +187,7 @@ def register_user(email: str, password: str) -> dict:
         )
 
     password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    user = user_model.create_user(email, password_hash)
+    user = user_model.create_user(email, password_hash, name)
     if user is None:
         raise AppError(
             message="Could not create account. Please try again later.",

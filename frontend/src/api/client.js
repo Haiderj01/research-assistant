@@ -22,9 +22,42 @@ export function getStoredToken() {
   }
 }
 
+export function setStoredToken(token) {
+  try {
+    localStorage.setItem("auth_token", token);
+  } catch {
+    // ignore storage access errors
+  }
+}
+
 export function clearStoredToken() {
   try {
     localStorage.removeItem("auth_token");
+  } catch {
+    // ignore storage access errors
+  }
+}
+
+export function getStoredUser() {
+  try {
+    const raw = localStorage.getItem("auth_user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredUser(user) {
+  try {
+    localStorage.setItem("auth_user", JSON.stringify(user));
+  } catch {
+    // ignore storage access errors
+  }
+}
+
+export function clearStoredUser() {
+  try {
+    localStorage.removeItem("auth_user");
   } catch {
     // ignore storage access errors
   }
