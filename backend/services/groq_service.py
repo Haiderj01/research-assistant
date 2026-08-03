@@ -1,8 +1,7 @@
 import os
 import re
 import time
-from google import genai
-from google.genai import types
+from groq import Groq
 from backend.config.settings import settings
 from backend.middlewares.error_handler import AppError
 from backend.utils.logger import logger
@@ -16,34 +15,48 @@ def _load_prompt(name: str) -> str:
         return f.read().strip()
 
 
-def _get_client() -> genai.Client:
-    api_key = settings.GEMINI_API_KEY
+def _get_client() -> Groq:
+    api_key = settings.GROQ_API_KEY
 
     if not api_key:
         raise AppError(
-            message="Gemini API key is not configured.",
+            message="LLM API key is not configured.",
             status_code=500,
             code="MISSING_API_KEY",
         )
 
-    return genai.Client(api_key=api_key)
+    return Groq(api_key=api_key)
 
 
-def _extract_retry_delay(error_msg: str) -> float:
-    match = re.search(r"retry in ([\d.]+)s", error_msg)
-    return float(match.group(1)) if match else 0
+def _extract_retry_delay(exc: Exception) -> float:
+    """Return the server-suggested retry delay in seconds, if any."""
+    msg = str(exc)
+    match = re.search(r"retry (?:in|after) ([\d.]+)", msg)
+    if match:
+        return float(match.group(1))
+
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None)
+    if headers:
+        retry_after = headers.get("retry-after")
+        if retry_after:
+            try:
+                return float(retry_after)
+            except ValueError:
+                pass
+    return 0
 
 
 def _is_retryable(error_msg: str) -> bool:
-    """Return True if the Gemini error is transient and worth retrying.
+    """Return True if the LLM error is transient and worth retrying.
 
-    Retries quota exhaustion (429 / RESOURCE_EXHAUSTED) and transient
+    Retries quota/rate-limit exhaustion (429 / RATE_LIMIT) and transient
     model-unavailability errors (503 / UNAVAILABLE), which signal high
     demand that typically subsides within seconds.
     """
     return (
         "429" in error_msg
-        or "RESOURCE_EXHAUSTED" in error_msg
+        or "RATE_LIMIT" in error_msg
         or "503" in error_msg
         or "UNAVAILABLE" in error_msg
     )
@@ -51,56 +64,56 @@ def _is_retryable(error_msg: str) -> bool:
 
 def _generate(prompt: str, system_instruction: str | None = None) -> str:
     client = _get_client()
-    config = types.GenerateContentConfig(
-        temperature=0.3,
-        max_output_tokens=2048,
-    )
+    model_name = settings.GROQ_MODEL_NAME
+
+    if not model_name:
+        raise AppError(
+            message="LLM model name is not configured.",
+            status_code=500,
+            code="MISSING_MODEL_NAME",
+        )
+
+    messages = []
     if system_instruction:
-        config.system_instruction = system_instruction
+        messages.append({"role": "system", "content": system_instruction})
+    messages.append({"role": "user", "content": prompt})
 
     last_error = None
     for attempt in range(3):
         try:
-            model_name = settings.GEMINI_MODEL_NAME
-
-            if not model_name:
-                raise AppError(
-                    message="Gemini model name is not configured.",
-                    status_code=500,
-                    code="MISSING_MODEL_NAME",
-                )
-
-            response = client.models.generate_content(
+            response = client.chat.completions.create(
                 model=model_name,
-                contents=prompt,
-                config=config,
+                messages=messages,
+                temperature=0.3,
+                max_tokens=2048,
             )
 
-            if response.text is None:
+            content = response.choices[0].message.content
+            if not content:
                 raise AppError(
-                    message="Gemini returned an empty response.",
+                    message="LLM returned an empty response.",
                     status_code=502,
-                    code="EMPTY_GEMINI_RESPONSE",
+                    code="EMPTY_GROQ_RESPONSE",
                 )
 
-            return response.text.strip()
+            return content.strip()
         except Exception as e:
             last_error = e
             error_str = str(e)
             if not _is_retryable(error_str) or attempt == 2:
                 break
-            delay = _extract_retry_delay(error_str) or (2 ** attempt * 5)
+            delay = _extract_retry_delay(e) or (2 ** attempt * 5)
             logger.warning(
-                f"Gemini transient error, retrying in {delay:.0f}s (attempt {attempt + 1}/3)"
+                f"LLM transient error, retrying in {delay:.0f}s (attempt {attempt + 1}/3)"
             )
             time.sleep(delay)
 
-    logger.exception("Gemini API call failed")
+    logger.exception("LLM API call failed")
     msg = str(last_error) if settings.DEBUG_MODE else "The AI generation service is temporarily unavailable. Please try again."
     raise AppError(
         message=msg,
         status_code=502,
-        code="GEMINI_ERROR",
+        code="GROQ_ERROR",
     )
 
 
@@ -117,7 +130,7 @@ def answer_question(context: str, question: str) -> str:
     system = _load_prompt("system.txt")
     template = _load_prompt("qa.txt")
     prompt = template.replace("{context}", context).replace("{question}", question)
-    logger.info("Generating answer via Gemini")
+    logger.info("Generating answer via LLM")
     return _generate(prompt, system_instruction=system)
 
 
@@ -133,7 +146,7 @@ def generate_summary(context: str) -> str:
     system = _load_prompt("system.txt")
     template = _load_prompt("summary.txt")
     prompt = template.replace("{context}", context)
-    logger.info("Generating summary via Gemini")
+    logger.info("Generating summary via LLM")
     return _generate(prompt, system_instruction=system)
 
 
@@ -167,7 +180,7 @@ def extract_paper_gaps(context: str) -> str:
     system = _load_prompt("system.txt")
     template = _load_prompt("gap_map.txt")
     prompt = template.replace("{context}", context)
-    logger.info("Extracting per-paper limitations and future work via Gemini")
+    logger.info("Extracting per-paper limitations and future work via LLM")
     return _generate(prompt, system_instruction=system)
 
 
@@ -184,5 +197,5 @@ def synthesize_research_gaps(summaries: str) -> str:
     system = _load_prompt("system.txt")
     template = _load_prompt("gap_reduce.txt")
     prompt = template.replace("{summaries}", summaries)
-    logger.info("Synthesizing cross-paper research gaps via Gemini")
+    logger.info("Synthesizing cross-paper research gaps via LLM")
     return _generate(prompt, system_instruction=system)

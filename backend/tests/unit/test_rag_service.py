@@ -8,7 +8,7 @@ from backend.middlewares.error_handler import AppError
 def mock_deps():
     with (
         patch("backend.services.rag_service.embedding_service") as mock_embed,
-        patch("backend.services.rag_service.gemini_service") as mock_gemini,
+        patch("backend.services.rag_service.groq_service") as mock_groq,
         patch("backend.services.rag_service.chunk_model") as mock_chunks,
         patch("backend.services.rag_service.conversation_model") as mock_conv,
         patch("backend.services.rag_service.question_model") as mock_q,
@@ -16,7 +16,7 @@ def mock_deps():
         patch("backend.services.rag_service.vector_store") as mock_vs,
     ):
         mock_embed.generate_embedding.return_value = [0.1] * 384
-        mock_gemini.answer_question.return_value = "This is the generated answer."
+        mock_groq.answer_question.return_value = "This is the generated answer."
         mock_conv.create_conversation.return_value = {"_id": "conv_123"}
         mock_conv.update_conversation.return_value = True
         mock_chunks.get_chunks_by_vector_ids.return_value = [
@@ -32,7 +32,7 @@ def mock_deps():
 
         yield {
             "embed": mock_embed,
-            "gemini": mock_gemini,
+            "groq": mock_groq,
             "chunks": mock_chunks,
             "conv": mock_conv,
             "questions": mock_q,

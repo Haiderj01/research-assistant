@@ -1,9 +1,10 @@
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from bson import ObjectId
 from backend.middlewares.error_handler import AppError
 from backend.models import paper_model, chunk_model
-from backend.services import embedding_service, gemini_service
+from backend.services import embedding_service, groq_service
 from backend.services.vector_store_service import vector_store
 from backend.config.settings import settings
 from backend.utils.logger import logger
@@ -92,17 +93,17 @@ def _verify_papers(paper_ids: list[str], user_id: str) -> list[dict]:
     return papers
 
 
-def _retrieve_paper_chunks(paper_id: str, top_k: int) -> str:
+def _retrieve_paper_chunks(paper_id: str, top_k: int, query_vector: list[float]) -> str:
     """Retrieve the most relevant limitation/future-work chunks for a paper.
 
     Args:
         paper_id: The paper ID to scope retrieval to.
         top_k: Number of chunks to return.
+        query_vector: Precomputed embedding for the retrieval query.
 
     Returns:
         The joined chunk text, or an empty string if nothing was found.
     """
-    query_vector = embedding_service.generate_embedding(GAP_RETRIEVAL_QUERY)
     results = vector_store.search(query_vector, k=top_k, paper_ids=[paper_id])
     if not results:
         return ""
@@ -120,10 +121,10 @@ def _retrieve_paper_chunks(paper_id: str, top_k: int) -> str:
 
 
 def _parse_gap_blocks(text: str) -> list[dict]:
-    """Parse the reduce-step Gemini output into structured gap dicts.
+    """Parse the reduce-step LLM output into structured gap dicts.
 
     Args:
-        text: The raw Gemini gap-analysis text in the agreed plain-text format.
+        text: The raw LLM gap-analysis text in the agreed plain-text format.
 
     Returns:
         A list of dicts with keys description, supporting_papers, strength,
@@ -176,8 +177,8 @@ def analyze_research_gaps(paper_ids, user_id: str) -> dict:
     """Run the full research gap analysis over a set of papers.
 
     Map step: for each paper, retrieve its limitation/future-work chunks and
-    ask Gemini to extract a structured per-paper summary. Reduce step: send
-    all per-paper summaries together and ask Gemini to synthesize cross-paper
+    ask the LLM to extract a structured per-paper summary. Reduce step: send
+    all per-paper summaries together and ask the LLM to synthesize cross-paper
     gaps, each traceable to the papers that stated it.
 
     Args:
@@ -192,7 +193,7 @@ def analyze_research_gaps(paper_ids, user_id: str) -> dict:
 
     Raises:
         AppError: 400 on invalid input, 404 on missing/foreign papers, 422
-        on unprocessed papers, 502 if any Gemini call fails.
+        on unprocessed papers, 502 if any LLM call fails.
     """
     paper_ids = _validate_paper_ids(paper_ids)
     papers = _verify_papers(paper_ids, user_id)
@@ -200,33 +201,47 @@ def analyze_research_gaps(paper_ids, user_id: str) -> dict:
 
     started = time.time()
 
-    per_paper_summaries = []
-    for paper in papers:
-        pid = str(paper["_id"])
-        context = _retrieve_paper_chunks(pid, PER_PAPER_CHUNKS)
+    query_vector = embedding_service.generate_embedding(GAP_RETRIEVAL_QUERY)
+    contexts = [
+        _retrieve_paper_chunks(
+            str(paper["_id"]), PER_PAPER_CHUNKS, query_vector
+        )
+        for paper in papers
+    ]
+
+    def _extract(idx: int) -> dict:
+        paper = papers[idx]
+        context = contexts[idx]
         try:
             if context:
-                summary = gemini_service.extract_paper_gaps(context)
+                summary = groq_service.extract_paper_gaps(context)
             else:
                 summary = (
                     "None stated: no content could be retrieved for this paper "
                     "related to limitations or future work."
                 )
         except AppError:
-            logger.error(f"Gap analysis map step failed for paper {pid}")
+            logger.error(f"Gap analysis map step failed for paper {paper['_id']}")
             raise
         except Exception as exc:
-            logger.exception(f"Gap analysis map step failed for paper {pid}")
+            logger.exception(f"Gap analysis map step failed for paper {paper['_id']}")
             raise AppError(
                 message="The AI generation service failed while analyzing one of the papers. Please try again.",
                 status_code=502,
-                code="GEMINI_ERROR",
+                code="GROQ_ERROR",
             ) from exc
-        per_paper_summaries.append({
-            "paper_id": pid,
+        return {
+            "paper_id": str(paper["_id"]),
             "title": paper.get("title", ""),
             "summary": summary,
-        })
+        }
+
+    per_paper_summaries = [None] * len(papers)
+    max_workers = min(len(papers), settings.GAP_MAP_CONCURRENCY)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_idx = {executor.submit(_extract, i): i for i in range(len(papers))}
+        for future in as_completed(future_to_idx):
+            per_paper_summaries[future_to_idx[future]] = future.result()
 
     summaries_blob = "\n\n".join(
         f"--- Paper ID: {s['paper_id']} | Title: {s['title']} ---\n{s['summary']}"
@@ -234,7 +249,7 @@ def analyze_research_gaps(paper_ids, user_id: str) -> dict:
     )
 
     try:
-        analysis_text = gemini_service.synthesize_research_gaps(summaries_blob)
+        analysis_text = groq_service.synthesize_research_gaps(summaries_blob)
     except AppError:
         logger.error("Gap analysis reduce step failed")
         raise
@@ -243,7 +258,7 @@ def analyze_research_gaps(paper_ids, user_id: str) -> dict:
         raise AppError(
             message="The AI generation service failed while synthesizing research gaps. Please try again.",
             status_code=502,
-            code="GEMINI_ERROR",
+            code="GROQ_ERROR",
         ) from exc
 
     gaps = _parse_gap_blocks(analysis_text)

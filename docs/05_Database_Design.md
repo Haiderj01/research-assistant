@@ -13,7 +13,7 @@ This document defines the complete data model for the AI Research Assistant, cov
 
 **What Should NOT Be Stored Permanently**
 - Raw, unprocessed intermediate text buffers used only during the extraction/chunking pipeline (these are transient and discarded once chunking and embedding are complete).
-- Full raw LLM prompts sent to Gemini (only the final answer and its source references need to be persisted; the constructed prompt itself is a transient artifact of a single request).
+- Full raw LLM prompts sent to Groq (only the final answer and its source references need to be persisted; the constructed prompt itself is a transient artifact of a single request).
 - Temporary upload buffers beyond what is needed for processing, unless the product explicitly requires retaining the original PDF file for later re-download (a decision the system should make deliberately, not by default retaining everything indefinitely).
 - Session-only UI state (e.g., which tab is open, in-progress unsent form input) — this belongs in frontend state, never persisted server-side.
 
@@ -33,7 +33,7 @@ The system uses **two distinct, complementary storage systems**, plus file stora
         ├──────────────────────────────┬───────────────────────────────┬───────────────────────┐
         ▼                              ▼                               ▼                        ▼
 ┌───────────────────┐      ┌────────────────────────┐      ┌─────────────────────┐   ┌───────────────────┐
-│  MongoDB              │      │  FAISS                    │      │  File Storage            │   │  Gemini API           │
+│  MongoDB              │      │  FAISS                    │      │  File Storage            │   │  Groq API           │
 │  (Structured metadata,  │      │  (Vector embeddings,        │      │  (Raw uploaded PDFs)      │   │  (Answer/summary       │
 │  history, summaries)    │      │  similarity search index)    │      │                            │   │  generation — no        │
 │                        │      │                            │      │                            │   │  persistent storage)    │
@@ -45,7 +45,7 @@ The system uses **two distinct, complementary storage systems**, plus file stora
 - **MongoDB** stores everything structured and queryable: paper records, chunk metadata, conversations, questions, and history. Every chunk record in MongoDB stores a reference (`vector_id`) pointing to its corresponding vector in FAISS.
 - **FAISS** stores only the numerical vector embeddings and an internal ID that maps back to the corresponding chunk record in MongoDB. FAISS has no awareness of paper titles, users, or any structured field — it only knows vectors and their IDs.
 - **File Storage** holds the original uploaded PDF files on disk (or, in future, in cloud object storage), referenced from MongoDB via a stored file path.
-- **Gemini API** is not a data store — it is a stateless generation service. The backend sends it a constructed prompt and receives a generated response; nothing is persisted on the Gemini side, and the backend is responsible for persisting the final answer in MongoDB if history retention is required.
+- **Groq API** is not a data store — it is a stateless generation service. The backend sends it a constructed prompt and receives a generated response; nothing is persisted on the Groq side, and the backend is responsible for persisting the final answer in MongoDB if history retention is required.
 - **Flask Backend** is the sole coordinator: it is the only component that reads from and writes to all four systems, ensuring that MongoDB and FAISS remain synchronized (see Section 6).
 
 ---

@@ -327,7 +327,7 @@ The project will be considered successful if it meets the following measurable o
 | Backend | Flask | Lightweight, Python-based framework well-suited for AI/ML API integration. |
 | Embeddings | Sentence Transformers | Provides high-quality semantic embeddings for text similarity and retrieval. |
 | Vector Database | FAISS | Efficient, fast similarity search over large collections of vector embeddings. |
-| LLM | Gemini | Natural language understanding and generation for question answering and summarization. |
+| LLM | Groq | Natural language understanding and generation for question answering and summarization. |
 | Database | MongoDB | Flexible, document-oriented storage suited for paper metadata and query history. |
 
 ---

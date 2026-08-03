@@ -66,7 +66,7 @@ This document deliberately avoids implementation code. Its purpose is to establi
                                   └────────┬──────────────┘
                                            ▼
                                   ┌──────────────────────┐
-                                  │  Gemini API (LLM)      │
+                                  │  Groq API (LLM)      │
                                   └────────┬──────────────┘
                                            ▼
                                   ┌──────────────────────┐
@@ -90,7 +90,7 @@ This document deliberately avoids implementation code. Its purpose is to establi
 - **FAISS Vector Store**: Stores chunk embeddings and performs fast similarity search to retrieve the most relevant chunks for a given query.
 - **RAG Engine (Orchestrator)**: Coordinates the retrieval-augmented generation process — invoking the embedding generator, querying FAISS, constructing prompts, and calling the LLM.
 - **Context Retriever**: A sub-component of the RAG Engine responsible for selecting and ranking the most relevant retrieved chunks before they are passed to the LLM.
-- **Gemini API (LLM)**: Generates natural-language answers, summaries, and comparisons based on retrieved context and user prompts.
+- **Groq API (LLM)**: Generates natural-language answers, summaries, and comparisons based on retrieved context and user prompts.
 - **Metadata Database (MongoDB)**: Stores structured metadata such as paper titles, upload timestamps, user query history, and extracted structured data (keywords, datasets, algorithms).
 - **Generated Response**: The final structured output (answer, summary, or comparison) returned to the frontend for display.
 
@@ -110,7 +110,7 @@ The system adopts a **layered, modular architecture** with clear separation of c
 
 - **High Cohesion**: Each module groups together closely related functionality (e.g., all PDF-related operations live within the PDF Processing Module) rather than scattering related logic across unrelated parts of the system.
 
-These principles matter for this project because they directly support the architectural goals defined in Section 2: modularity and loose coupling enable extensibility (e.g., swapping Gemini for another LLM) and maintainability (each module can be debugged and modified independently), while separation of concerns and high cohesion reduce the cognitive load required to understand and safely modify any single part of the system.
+These principles matter for this project because they directly support the architectural goals defined in Section 2: modularity and loose coupling enable extensibility (e.g., swapping Groq for another LLM) and maintainability (each module can be debugged and modified independently), while separation of concerns and high cohesion reduce the cognitive load required to understand and safely modify any single part of the system.
 
 ---
 
@@ -301,7 +301,7 @@ Orchestrate the retrieval-augmented generation process to produce grounded, natu
 - Generate the question embedding via the Embedding Module.
 - Query the Vector Database for relevant chunks.
 - Construct a well-formed prompt combining retrieved context and the user question.
-- Invoke the Gemini Integration to generate the final answer.
+- Invoke the Groq Integration to generate the final answer.
 
 **Inputs**
 - User question, target paper(s) scope.
@@ -313,7 +313,7 @@ Orchestrate the retrieval-augmented generation process to produce grounded, natu
 - Query embedding → retrieval → context ranking/selection → prompt construction → LLM invocation → response formatting.
 
 **Dependencies**
-- Embedding Module, FAISS Vector Store, Gemini Integration.
+- Embedding Module, FAISS Vector Store, Groq Integration.
 
 **Possible Errors**
 - No relevant chunks found (e.g., question unrelated to uploaded papers).
@@ -322,7 +322,7 @@ Orchestrate the retrieval-augmented generation process to produce grounded, natu
 
 ---
 
-### 5.8 Gemini Integration
+### 5.8 Groq Integration
 
 **Purpose**
 Provide natural language generation capability for answers, summaries, and comparisons.
@@ -338,10 +338,10 @@ Provide natural language generation capability for answers, summaries, and compa
 - Generated text response.
 
 **Internal Processing**
-- API call to the hosted Gemini LLM service.
+- API call to the hosted Groq LLM service.
 
 **Dependencies**
-- Third-party Gemini API (external network dependency).
+- Third-party Groq API (external network dependency).
 
 **Possible Errors**
 - API rate limiting or quota exhaustion.
@@ -444,7 +444,7 @@ Provide consistent, centralized logging across all backend components.
 10. **Similarity Search** — The query vector is used to search the FAISS Vector Store for the most semantically relevant chunks.
 11. **Context Retrieval** — The top-ranked chunks are retrieved and assembled as context.
 12. **Prompt Construction** — The RAG Engine constructs a structured prompt combining the retrieved context, the user's question, and generation instructions.
-13. **Gemini Response** — The constructed prompt is sent to the Gemini API, which generates a grounded natural-language answer.
+13. **Groq Response** — The constructed prompt is sent to the Groq API, which generates a grounded natural-language answer.
 14. **Frontend Display** — The generated answer, along with source references, is returned to the frontend and displayed to the user; the interaction is logged to the Metadata Database for history tracking.
 
 ---
@@ -454,7 +454,7 @@ Provide consistent, centralized logging across all backend components.
 ```
    INPUT                PROCESSING                STORAGE              RETRIEVAL              GENERATION            PRESENTATION
 ┌──────────┐        ┌──────────────────┐      ┌───────────────┐    ┌─────────────────┐    ┌──────────────────┐    ┌───────────────┐
-│ PDF Files │───────▶│ Extraction,        │────▶│ FAISS (vectors) │───▶│ Similarity Search│───▶│ Gemini LLM         │───▶│ Frontend UI     │
+│ PDF Files │───────▶│ Extraction,        │────▶│ FAISS (vectors) │───▶│ Similarity Search│───▶│ Groq LLM         │───▶│ Frontend UI     │
 │ User Query│        │ Chunking, Embedding │     │ MongoDB (meta)  │    │ Context Selection │    │ Answer/Summary Gen  │    │ (Answer/Report) │
 └──────────┘        └──────────────────┘      └───────────────┘    └─────────────────┘    └──────────────────┘    └───────────────┘
 ```
@@ -465,7 +465,7 @@ Provide consistent, centralized logging across all backend components.
 - **Processing**: Uploaded files pass through extraction, cleaning, chunking, and embedding; queries pass through embedding directly.
 - **Storage**: Chunk embeddings are persisted in the FAISS Vector Store; structured metadata (paper info, history) is persisted in MongoDB.
 - **Retrieval**: At query time, the system performs similarity search against stored embeddings and selects the most relevant context.
-- **Generation**: Retrieved context and the user's request are passed to the Gemini LLM to produce a grounded natural-language output.
+- **Generation**: Retrieved context and the user's request are passed to the Groq LLM to produce a grounded natural-language output.
 - **Presentation**: The final output is returned to the frontend and rendered for the user, with the interaction persisted for history/analytics.
 
 ---
@@ -485,7 +485,7 @@ Provide consistent, centralized logging across all backend components.
 | Embedding Module | FAISS Vector Store | Store generated chunk embeddings; supply query embeddings for search. |
 | RAG Engine | Embedding Module | Request embedding of the user's question. |
 | RAG Engine | FAISS Vector Store | Perform similarity search to retrieve relevant chunks. |
-| RAG Engine | Gemini Integration | Submit constructed prompts and receive generated responses. |
+| RAG Engine | Groq Integration | Submit constructed prompts and receive generated responses. |
 | RAG Engine | Metadata Database | Retrieve/store paper scope information and log query history. |
 | Analytics Module | Metadata Database | Read structured metadata to compute trends and statistics. |
 | Logging Module | All Backend Modules | Receive log events from every module for centralized tracking. |
@@ -497,7 +497,7 @@ Provide consistent, centralized logging across all backend components.
 **Scenario: User uploads a paper and asks a question**
 
 ```
-User        Frontend       Backend        PDFProcessor   EmbeddingGen    FAISS          Gemini         Database
+User        Frontend       Backend        PDFProcessor   EmbeddingGen    FAISS          Groq         Database
  │              │              │                │              │            │              │               │
  │  Upload PDF  │              │                │              │            │              │               │
  │─────────────▶│              │                │              │            │              │               │
@@ -550,7 +550,7 @@ User        Frontend       Backend        PDFProcessor   EmbeddingGen    FAISS  
 | PDF Processing | PDF text-extraction library (e.g., PyPDF2/pdfplumber-class tooling) | Extracting raw text from uploaded PDFs. | Mature, widely used tooling for text-based PDF parsing. |
 | Embeddings | Sentence Transformers | Converting text into semantic vector representations. | Strong performance on semantic similarity tasks; open-source and self-hostable. |
 | Vector Database | FAISS | Storing and searching vector embeddings efficiently. | High-performance, open-source similarity search library well-suited for local/small-to-medium scale deployment. |
-| LLM | Gemini | Natural language answer generation, summarization, and comparison. | Strong reasoning and generation capability accessible via hosted API. |
+| LLM | Groq | Natural language answer generation, summarization, and comparison. | Strong reasoning and generation capability accessible via hosted API. |
 | Database | MongoDB | Storing paper metadata and query history. | Flexible document schema suited to varied, evolving metadata structures. |
 | Charts | Charting library (frontend, e.g., Recharts-class tooling) | Visualizing trends and dashboard statistics. | Simple integration with React for rendering analytics visuals. |
 | Deployment | Containerized deployment (e.g., Docker) on cloud or local infrastructure | Packaging and running the application consistently across environments. | Ensures reproducibility and simplifies future cloud migration. |
@@ -584,11 +584,11 @@ User        Frontend       Backend        PDFProcessor   EmbeddingGen    FAISS  
 - **Decision**: Use Sentence Transformers for generating embeddings.
 - **Reason**: Provides strong, well-validated semantic embedding quality and can run locally or via lightweight hosted inference.
 - **Advantages**: Open-source, no per-call API cost, good performance on semantic similarity benchmarks.
-- **Possible Alternatives**: OpenAI embeddings API, Gemini embeddings API, Cohere embeddings.
+- **Possible Alternatives**: OpenAI embeddings API, Groq embeddings API, Cohere embeddings.
 - **Trade-offs**: Hosted embedding APIs may offer higher quality or scale, but introduce additional cost and external dependency; Sentence Transformers keeps the embedding step self-contained and free.
 
-### Why Gemini
-- **Decision**: Use Gemini as the LLM for generation tasks.
+### Why Groq
+- **Decision**: Use Groq as the LLM for generation tasks.
 - **Reason**: Provides strong natural language reasoning and generation capability via an accessible hosted API, suitable for question answering, summarization, and comparison tasks.
 - **Advantages**: High-quality generation, manageable API integration, competitive free/low-cost tier for development and demonstration purposes.
 - **Possible Alternatives**: OpenAI GPT models, Anthropic Claude, open-source self-hosted LLMs (e.g., Llama-family models).
@@ -644,7 +644,7 @@ User        Frontend       Backend        PDFProcessor   EmbeddingGen    FAISS  
 | Frontend | Network/API failure | Display a user-friendly error message; allow retry where appropriate. |
 | Backend | Invalid request/payload | Return a structured error response with a clear status code and message. |
 | API Failures (general) | Downstream module exception | Catch exceptions at the API layer boundary; return a generic, safe error message to the client while logging full details internally. |
-| Gemini Failures | API timeout, rate limit, malformed response | Retry with backoff where appropriate; surface a clear "generation failed, please retry" message if retries are exhausted. |
+| Groq Failures | API timeout, rate limit, malformed response | Retry with backoff where appropriate; surface a clear "generation failed, please retry" message if retries are exhausted. |
 | Embedding Failures | Model load failure, oversized input | Validate input length before embedding; return a descriptive error if the model is unavailable. |
 | FAISS Failures | Index corruption, search failure | Fall back to a safe error response indicating search is temporarily unavailable; log for investigation. |
 | Database Failures | Connection loss, write failure | Retry transient failures; return a clear error if persistence fails, without losing the user's in-progress action where possible. |
@@ -663,18 +663,18 @@ The general principle across all layers is: **fail safely and informatively**. I
 - **Chunk Size Optimization**: Chunk size should be tuned to balance retrieval precision (smaller chunks are more targeted) against context sufficiency (larger chunks preserve more surrounding meaning); this is a key tunable parameter affecting both retrieval quality and performance.
 - **Embedding Reuse**: Once a paper's chunks are embedded, embeddings should be persisted and reused across all future queries rather than regenerated, avoiding redundant computation.
 - **Database Optimization**: Metadata queries (e.g., fetching a user's paper list or history) should be indexed appropriately in MongoDB to maintain fast dashboard and history load times as data grows.
-- **Prompt Optimization**: Prompts sent to the Gemini API should include only the most relevant retrieved context (not excessive or redundant chunks) to minimize latency and token usage while preserving answer quality.
+- **Prompt Optimization**: Prompts sent to the Groq API should include only the most relevant retrieved context (not excessive or redundant chunks) to minimize latency and token usage while preserving answer quality.
 
 ---
 
 ## 16. Future Architecture Evolution
 
 - **OCR**: Introduce an OCR module (e.g., for scanned/image-based PDFs) as an additional branch within the PDF Processing Module, activated when standard text extraction yields insufficient content.
-- **Multi-language Papers**: Extend the Embedding Module and Gemini prompts to support multilingual models and language-aware processing.
+- **Multi-language Papers**: Extend the Embedding Module and Groq prompts to support multilingual models and language-aware processing.
 - **Citation Generation**: Add a dedicated Citation Module that parses bibliographic metadata and formats citations in standard styles (APA, MLA, BibTeX).
 - **Cloud Storage**: Migrate uploaded PDF storage from local/ephemeral storage to durable cloud object storage (e.g., S3-class storage) for reliability and scale.
 - **Collaborative Workspaces**: Extend the Metadata Database schema to support shared workspace entities, with access control governing which users can view/edit a shared paper collection.
-- **Multiple LLM Providers**: Abstract the Gemini Integration behind a provider-agnostic interface, allowing the RAG Engine to route requests to different LLM providers based on configuration.
+- **Multiple LLM Providers**: Abstract the Groq Integration behind a provider-agnostic interface, allowing the RAG Engine to route requests to different LLM providers based on configuration.
 - **Semantic Paper Recommendations**: Leverage existing embeddings to power a recommendation module that suggests related papers based on a user's uploaded collection and query history.
 - **Research Graph Generation**: Build a graph-based representation connecting papers, shared concepts, datasets, and methods, enabling visual exploration of a research area's structure — a natural extension of the existing Analytics Module.
 

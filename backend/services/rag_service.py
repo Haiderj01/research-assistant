@@ -1,4 +1,4 @@
-from backend.services import embedding_service, gemini_service
+from backend.services import embedding_service, groq_service
 from backend.services.vector_store_service import vector_store
 from backend.models import chunk_model, conversation_model, question_model, search_history_model
 from backend.config.settings import settings
@@ -20,7 +20,7 @@ def answer_query(
         2. Search FAISS for similar chunks.
         3. Resolve chunk IDs and retrieve text from MongoDB.
         4. Filter by paper scope.
-        5. Build context and generate answer via Gemini.
+        5. Build context and generate answer via LLM.
         6. Persist conversation, question, and search history.
 
     Args:
@@ -100,7 +100,7 @@ def answer_query(
         f"[Source {i+1}] {s['text']}" for i, s in enumerate(source_chunks)
     )
 
-    generated_answer = gemini_service.answer_question(
+    generated_answer = groq_service.answer_question(
         context=context, question=question
     )
 

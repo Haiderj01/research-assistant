@@ -2,7 +2,7 @@ from flask import request, jsonify, g
 from bson import ObjectId
 from backend.middlewares.error_handler import AppError
 from backend.models import paper_model, chunk_model
-from backend.services import gemini_service
+from backend.services import groq_service
 
 
 def handle_compare():
@@ -67,7 +67,7 @@ def handle_compare():
 
     context = "\n\n".join(all_context_parts)
 
-    comparison_text = gemini_service.generate_comparison(
+    comparison_text = groq_service.generate_comparison(
         context=context,
         dimensions=dimensions or [],
     )

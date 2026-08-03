@@ -238,7 +238,7 @@ class TestHistory:
 class TestSummarize:
     @patch("backend.models.paper_model.get_paper")
     @patch("backend.models.chunk_model.get_chunks_by_paper")
-    @patch("backend.services.gemini_service.generate_summary")
+    @patch("backend.services.groq_service.generate_summary")
     @patch("backend.models.paper_model.update_paper")
     def test_summarize_success(
         self, mock_update, mock_generate, mock_chunks, mock_paper, client
@@ -268,7 +268,7 @@ class TestSummarize:
 class TestCompare:
     @patch("backend.models.paper_model.get_paper")
     @patch("backend.models.chunk_model.get_chunks_by_paper")
-    @patch("backend.services.gemini_service.generate_comparison")
+    @patch("backend.services.groq_service.generate_comparison")
     def test_compare_success(self, mock_gen, mock_chunks, mock_paper, client):
         def get_paper_side_effect(pid, user_id=None):
             return {

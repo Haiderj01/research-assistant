@@ -1,6 +1,6 @@
 from unittest.mock import patch, MagicMock
 import pytest
-from backend.services.gemini_service import (
+from backend.services.groq_service import (
     answer_question,
     generate_summary,
     generate_comparison,
@@ -8,14 +8,24 @@ from backend.services.gemini_service import (
 from backend.middlewares.error_handler import AppError
 
 
+def _mock_completion(text: str) -> MagicMock:
+    message = MagicMock()
+    message.content = text
+    choice = MagicMock()
+    choice.message = message
+    response = MagicMock()
+    response.choices = [choice]
+    return response
+
+
 @pytest.fixture(autouse=True)
-def mock_gemini():
-    """Mock the Gemini API client for all tests."""
-    with patch("backend.services.gemini_service._get_client") as mock:
+def mock_llm():
+    """Mock the LLM API client for all tests."""
+    with patch("backend.services.groq_service._get_client") as mock:
         client = MagicMock()
-        response = MagicMock()
-        response.text = "This is a generated response."
-        client.models.generate_content.return_value = response
+        client.chat.completions.create.return_value = _mock_completion(
+            "This is a generated response."
+        )
         mock.return_value = client
         yield
 
@@ -30,52 +40,48 @@ class TestAnswerQuestion:
 
     def test_raises_error_on_api_failure(self):
         client = MagicMock()
-        client.models.generate_content.side_effect = Exception("API down")
-        with patch("backend.services.gemini_service._get_client", return_value=client):
+        client.chat.completions.create.side_effect = Exception("API down")
+        with patch("backend.services.groq_service._get_client", return_value=client):
             with pytest.raises(AppError) as exc:
                 answer_question(context="text", question="q")
-            assert exc.value.code == "GEMINI_ERROR"
+            assert exc.value.code == "GROQ_ERROR"
 
     def test_retries_on_503_unavailable(self):
         client = MagicMock()
-        response = MagicMock()
-        response.text = "Recovered response."
-        client.models.generate_content.side_effect = [
+        client.chat.completions.create.side_effect = [
             Exception("{'error': {'code': 503, 'status': 'UNAVAILABLE'}}"),
-            response,
+            _mock_completion("Recovered response."),
         ]
-        with patch("backend.services.gemini_service._get_client", return_value=client):
-            with patch("backend.services.gemini_service.time.sleep") as mock_sleep:
+        with patch("backend.services.groq_service._get_client", return_value=client):
+            with patch("backend.services.groq_service.time.sleep") as mock_sleep:
                 result = answer_question(context="text", question="q")
         assert result == "Recovered response."
         assert mock_sleep.call_count == 1
-        assert client.models.generate_content.call_count == 2
+        assert client.chat.completions.create.call_count == 2
 
     def test_retries_on_429_quota(self):
         client = MagicMock()
-        response = MagicMock()
-        response.text = "Recovered response."
-        client.models.generate_content.side_effect = [
-            Exception("429 RESOURCE_EXHAUSTED"),
-            response,
+        client.chat.completions.create.side_effect = [
+            Exception("429 RATE_LIMIT"),
+            _mock_completion("Recovered response."),
         ]
-        with patch("backend.services.gemini_service._get_client", return_value=client):
-            with patch("backend.services.gemini_service.time.sleep") as mock_sleep:
+        with patch("backend.services.groq_service._get_client", return_value=client):
+            with patch("backend.services.groq_service.time.sleep") as mock_sleep:
                 result = answer_question(context="text", question="q")
         assert result == "Recovered response."
         assert mock_sleep.call_count == 1
 
     def test_gives_up_after_three_attempts(self):
         client = MagicMock()
-        client.models.generate_content.side_effect = Exception(
+        client.chat.completions.create.side_effect = Exception(
             "{'error': {'code': 503, 'status': 'UNAVAILABLE'}}"
         )
-        with patch("backend.services.gemini_service._get_client", return_value=client):
-            with patch("backend.services.gemini_service.time.sleep"):
+        with patch("backend.services.groq_service._get_client", return_value=client):
+            with patch("backend.services.groq_service.time.sleep"):
                 with pytest.raises(AppError) as exc:
                     answer_question(context="text", question="q")
-        assert exc.value.code == "GEMINI_ERROR"
-        assert client.models.generate_content.call_count == 3
+        assert exc.value.code == "GROQ_ERROR"
+        assert client.chat.completions.create.call_count == 3
 
 
 class TestGenerateSummary:

@@ -94,7 +94,7 @@ research-assistant/
 | `middlewares/` | Apply cross-cutting logic to incoming requests/outgoing responses. | Request validation, centralized error handling, request logging. | `error_handler`, `validation_middleware`, `logging_middleware` | `utils/`, `config/` | Wraps around `routes/` and `controllers/`. |
 | `models/` | Define the structure of data persisted in MongoDB. | Define schemas/data classes for Paper, QueryHistory, User (future), ExtractedMetadata. | `paper_model`, `query_history_model`, `metadata_model` | `database/` (schema definitions) | Used by `services/` for persistence operations. |
 | `routes/` | Define API endpoints and map them to controllers. | Declare URL paths, HTTP methods, and bind them to the correct controller function. | `upload_routes`, `query_routes`, `summary_routes`, `comparison_routes`, `history_routes` | `controllers/` | Registered in `app.py`; the entry point for all frontend requests. |
-| `services/` | Contain the core business logic and AI pipeline. | Implement PDF processing, chunking, embedding generation, vector search, RAG orchestration, Gemini integration, analytics. | `pdf_service`, `chunking_service`, `embedding_service`, `vector_store_service`, `rag_service`, `gemini_service`, `analytics_service` | External libraries (Sentence Transformers, FAISS, Gemini SDK) | Called by `controllers/`; this is the heart of the AI pipeline described in the architecture document. |
+| `services/` | Contain the core business logic and AI pipeline. | Implement PDF processing, chunking, embedding generation, vector search, RAG orchestration, Groq integration, analytics. | `pdf_service`, `chunking_service`, `embedding_service`, `vector_store_service`, `rag_service`, `groq_service`, `analytics_service` | External libraries (Sentence Transformers, FAISS, Groq SDK) | Called by `controllers/`; this is the heart of the AI pipeline described in the architecture document. |
 | `utils/` | Provide shared, generic helper functions. | File validation, text cleaning helpers, response formatting, date/time helpers. | `file_utils`, `text_utils`, `response_utils` | None (should remain dependency-light) | Used across `services/`, `controllers/`, `middlewares/`. |
 | `tests/` | Contain backend automated tests. | Unit tests for each service; integration tests for API endpoints. | `test_pdf_service`, `test_embedding_service`, `test_query_routes`, etc. | `services/`, `routes/` (as test subjects) | Mirrors the structure of the modules it tests. |
 | `logs/` | Store runtime log output. | Hold application and error log files generated during execution. | `app.log`, `error.log` | Logging Module (per architecture doc) | Written to by all backend modules via the logging utility. |
@@ -192,7 +192,7 @@ Keeping documentation in a dedicated, numbered `docs/` folder ensures that the p
 | Python files | `snake_case` | `pdf_service.py`, `query_controller.py` |
 | React components | `PascalCase` | `FileUploader.jsx`, `ChatBubble.jsx` |
 | Folders | `lowercase` (with hyphens only if unavoidable) | `services/`, `vector_store/` |
-| Environment variables | `UPPER_SNAKE_CASE` | `GEMINI_API_KEY`, `DATABASE_URL` |
+| Environment variables | `UPPER_SNAKE_CASE` | `GROQ_API_KEY`, `DATABASE_URL` |
 | Markdown documents | `NN_Title_Case_With_Underscores.md` | `01_Project_Overview.md` |
 | Images/assets | `kebab-case` | `logo-primary.svg`, `empty-state-icon.png` |
 | Configuration files | Standard tool-defined name | `.env`, `.gitignore`, `package.json` |
@@ -240,8 +240,8 @@ Keeping documentation in a dedicated, numbered `docs/` folder ensures that the p
 
 | Variable | Purpose |
 |---|---|
-| `GEMINI_API_KEY` | Authenticates requests to the Gemini LLM API for answer generation, summarization, and comparison. |
-| `GEMINI_MODEL_NAME` | Specifies the Gemini model to use (default: `gemini-2.0-flash-lite`). |
+| `GROQ_API_KEY` | Authenticates requests to the Groq LLM API for answer generation, summarization, and comparison. |
+| `GROQ_MODEL_NAME` | Specifies the Groq model to use (default: `llama-3.3-70b-versatile`). |
 | `JWT_SECRET_KEY` | Secret key used to sign and verify JWT authentication tokens; required for user login/registration. |
 | `UPLOAD_DIRECTORY` | Specifies the file system path where uploaded PDF files are stored prior to and during processing. |
 | `DATABASE_URL` | Specifies the connection string used to connect to the MongoDB metadata database. |
@@ -354,7 +354,7 @@ Development should proceed in the following logical order, consistent with the d
 The project structure is explicitly designed to support the following future extensions without requiring structural rework:
 
 - **Adding New Modules**: New backend capabilities are added as new files within `services/`, with corresponding routes/controllers added in `routes/` and `controllers/` — no existing module needs modification to accommodate an unrelated new feature.
-- **Replacing LLM Providers**: Because all LLM interaction is isolated within `gemini_service` (behind a consistent interface used by `rag_service`), switching providers requires modifying or replacing a single service file rather than logic scattered throughout the codebase.
+- **Replacing LLM Providers**: Because all LLM interaction is isolated within `groq_service` (behind a consistent interface used by `rag_service`), switching providers requires modifying or replacing a single service file rather than logic scattered throughout the codebase.
 - **Replacing Vector Databases**: Similarly, all vector storage/search logic is isolated within `vector_store_service`; migrating from FAISS to another vector database requires changes only within this module.
 - **Adding Authentication**: A new `middlewares/auth_middleware` can be introduced and applied to existing routes without modifying the internal business logic of `services/`.
 - **Supporting New Document Formats**: Additional document types (e.g., `.docx`, `.txt`) can be supported by extending `pdf_service` (or introducing a parallel `docx_service`) that ultimately feeds into the same downstream chunking and embedding pipeline, since those stages operate on plain text regardless of source format.

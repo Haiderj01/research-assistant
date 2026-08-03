@@ -24,7 +24,7 @@ Retrieval-Augmented Generation (RAG) solves these problems by first **finding** 
 | **Context** | The specific retrieved text passed to the LLM alongside the user's question, which the LLM is instructed to base its answer on. |
 | **Embeddings** | Numerical vector representations of text that capture semantic meaning, allowing pieces of text to be compared for similarity mathematically rather than by exact word matching. |
 | **Vector Search** | The process of finding the embeddings most similar (closest in vector space) to a given query embedding, which is how "relevant" content is identified. |
-| **LLM (Large Language Model)** | The generative model (Gemini, in this project) responsible for producing the final natural-language answer once given a question and relevant context. |
+| **LLM (Large Language Model)** | The generative model (Groq, in this project) responsible for producing the final natural-language answer once given a question and relevant context. |
 | **Hallucination Reduction** | A key benefit of RAG: because the LLM is explicitly instructed to answer using only the retrieved context, and that context is drawn from real, verifiable source documents, the model is far less likely to invent facts that have no basis in the actual papers. |
 
 In short: instead of asking an LLM "what do you know about X," RAG asks "here is the specific relevant material — answer the question using only this." This is the foundational technique that makes the AI Research Assistant both scalable (it does not need to process entire paper collections on every question) and trustworthy (answers are grounded in retrievable, citable source text).
@@ -84,7 +84,7 @@ In short: instead of asking an LLM "what do you know about X," RAG asks "here is
                          └──────┬────────────┘
                                 ▼
                          ┌─────────────┐
-                         │    Gemini      │
+                         │    Groq      │
                          └──────┬──────┘
                                 ▼
                          ┌─────────────┐
@@ -105,7 +105,7 @@ In short: instead of asking an LLM "what do you know about X," RAG asks "here is
 9. **Similarity Search** — FAISS searches for the chunk embeddings most similar to the query embedding.
 10. **Top-k Chunks** — The most relevant chunks (a fixed number, "k") are selected as the retrieved context.
 11. **Prompt Construction** — The retrieved chunks and the user's question are assembled into a structured prompt, following the strategy defined in Section 6.
-12. **Gemini** — The constructed prompt is sent to the Gemini LLM, which generates a response grounded in the provided context.
+12. **Groq** — The constructed prompt is sent to the Groq LLM, which generates a response grounded in the provided context.
 13. **Answer** — The generated answer, along with references to its source chunks, is returned to the user.
 
 ---
@@ -130,14 +130,14 @@ Once relevant context has been retrieved, the generation phase produces the fina
 
 - **Prompt Construction**: The retrieved chunks, the user's question, and explicit generation instructions are assembled into a single structured prompt (see Section 6 for the detailed structure).
 - **Context Injection**: The retrieved chunk text is inserted into the prompt in a clearly delimited section, distinguishing it from the instructions and the question itself, so the LLM can reliably distinguish "source material" from "task instructions."
-- **Gemini Response Generation**: The assembled prompt is submitted to the Gemini API, which produces a generated natural-language response based on the provided context and instructions.
+- **Groq Response Generation**: The assembled prompt is submitted to the Groq API, which produces a generated natural-language response based on the provided context and instructions.
 - **Response Formatting**: The raw generated text is processed into the system's standard response shape (per `06_API_Design.md`), attaching source chunk/paper references so the frontend can display which part of which paper the answer was drawn from.
 
 ---
 
 ## 6. Prompt Engineering Strategy
 
-Prompts sent to Gemini follow a consistent, structured format composed of four conceptual parts:
+Prompts sent to Groq follow a consistent, structured format composed of four conceptual parts:
 
 | Component | Purpose |
 |---|---|
@@ -244,7 +244,7 @@ FAISS itself has no understanding of "papers" or "text" — it operates purely o
 └───────────────┘                    └──────┬────────┘
                                                    ▼
                                            ┌───────────────┐
-                                           │  Gemini Response    │
+                                           │  Groq Response    │
                                            └──────┬────────┘
                                                    ▼
                                            ┌───────────────┐
@@ -262,7 +262,7 @@ The two flows are connected by a **shared embedding space**: chunk embeddings ge
 |---|---|
 | **Empty PDFs** (no extractable text, e.g., a scanned image-only PDF) | Detected during the Extract Text stage; the paper's status is set to `failed` with a clear message indicating no extractable text was found; the paper is not passed further into the pipeline. OCR support is explicitly out of scope for Version 1 (per `01_Project_Overview.md`). |
 | **No Relevant Chunks Found** (similarity search returns only low-relevance matches) | The system proceeds to generation but instructs the LLM (per Section 6/7) to explicitly state that the available papers do not contain sufficient information to answer the question, rather than forcing an answer from weak context. |
-| **Gemini Unavailable** (API timeout, outage, or rate limit) | The `/ask`, `/summarize`, and `/compare` endpoints return a `502 Bad Gateway` response (per `06_API_Design.md`) with a clear, user-facing message indicating that answer generation is temporarily unavailable; the error is logged with full detail internally. |
+| **Groq Unavailable** (API timeout, outage, or rate limit) | The `/ask`, `/summarize`, and `/compare` endpoints return a `502 Bad Gateway` response (per `06_API_Design.md`) with a clear, user-facing message indicating that answer generation is temporarily unavailable; the error is logged with full detail internally. |
 | **Embedding Failures** (model load failure, unexpected input) | The affected paper's processing is marked as `failed`; the error is logged; the user is informed that processing could not complete and may retry. |
 | **Corrupted Files** (malformed or unreadable PDF) | Detected during file validation, prior to text extraction; the upload is rejected with a `400`-class error indicating the file could not be read, per `06_API_Design.md`. |
 
@@ -285,8 +285,8 @@ The consistent governing principle across all failure scenarios is: **fail clear
 - **Hybrid Search**: Combine semantic (vector) search with traditional keyword-based (lexical) search, so that queries containing exact technical terms, model names, or dataset names benefit from both matching strategies rather than relying on semantic similarity alone.
 - **Reranking**: Introduce a secondary reranking step after initial top-k retrieval, using a more precise (but more computationally expensive) model to re-score and reorder the initial candidate chunks before final selection, improving context quality without needing to run the expensive reranker over the entire chunk collection.
 - **Multiple Vector Databases**: As described in `04_Technology_Stack.md`, the vector store service is abstracted behind a consistent interface, allowing FAISS to be replaced or supplemented by a distributed/managed vector database (e.g., Milvus, Weaviate) as scale increases.
-- **Streaming Responses**: Adopt token-by-token streaming of the Gemini response to the frontend (via Server-Sent Events or WebSockets), improving perceived responsiveness for longer answers, summaries, or comparisons.
-- **Multiple LLM Providers**: Extend the Gemini integration into a provider-agnostic interface, allowing the RAG Engine to route generation requests to alternative LLM providers (e.g., as a fallback during an outage, or as a user-configurable preference).
+- **Streaming Responses**: Adopt token-by-token streaming of the Groq response to the frontend (via Server-Sent Events or WebSockets), improving perceived responsiveness for longer answers, summaries, or comparisons.
+- **Multiple LLM Providers**: Extend the Groq integration into a provider-agnostic interface, allowing the RAG Engine to route generation requests to alternative LLM providers (e.g., as a fallback during an outage, or as a user-configurable preference).
 
 ---
 

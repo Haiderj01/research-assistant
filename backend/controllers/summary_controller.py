@@ -2,7 +2,7 @@ from flask import request, jsonify, g
 from bson import ObjectId
 from backend.middlewares.error_handler import AppError
 from backend.models import paper_model, chunk_model
-from backend.services import gemini_service
+from backend.services import groq_service
 
 
 def handle_summarize():
@@ -66,7 +66,7 @@ def handle_summarize():
 
     context = "\n\n".join(c["chunk_text"] for c in chunks)
 
-    summary = gemini_service.generate_summary(context)
+    summary = groq_service.generate_summary(context)
     paper_model.update_paper(paper_id, {"summary": summary})
 
     return jsonify({

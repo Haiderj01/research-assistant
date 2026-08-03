@@ -45,13 +45,13 @@ Finalizing the API contract early also surfaces design problems before they beco
    ┌────┴─────────────────┬─────────────────────┐
    ▼                       ▼                       ▼
 ┌───────────┐     ┌───────────────┐      ┌───────────────┐
-│  MongoDB     │     │   FAISS          │      │  Gemini API      │
+│  MongoDB     │     │   FAISS          │      │  Groq API      │
 │ (metadata,    │     │ (vector search)   │      │ (generation)      │
 │  history)     │     │                    │      │                    │
 └───────────┘     └───────────────┘      └───────────────┘
 ```
 
-**Flow Explanation**: The React Frontend never communicates directly with MongoDB, FAISS, or Gemini — every request passes through the Flask Backend, which is the sole orchestrator of the AI Modules and the sole client of the underlying data stores and external API. This ensures a single, consistent point of validation, error handling, and business logic enforcement, consistent with the layered architecture defined in `02_System_Architecture.md`.
+**Flow Explanation**: The React Frontend never communicates directly with MongoDB, FAISS, or Groq — every request passes through the Flask Backend, which is the sole orchestrator of the AI Modules and the sole client of the underlying data stores and external API. This ensures a single, consistent point of validation, error handling, and business logic enforcement, consistent with the layered architecture defined in `02_System_Architecture.md`.
 
 ---
 
@@ -167,12 +167,12 @@ Finalizing the API contract early also surfaces design problems before they beco
 | `400` | Missing question text or empty `paper_ids`. |
 | `404` | One or more referenced papers do not exist. |
 | `422` | Referenced paper(s) are not yet fully processed. |
-| `502` | The LLM (Gemini) API failed or timed out. |
+| `502` | The LLM (Groq) API failed or timed out. |
 | `500` | Unexpected server error. |
 
 **Validation Rules**: `question` must be a non-empty string within a reasonable length limit; `paper_ids` must reference existing, fully processed papers.
 
-**Possible Errors**: No relevant chunks found for the question; Gemini API rate limit or timeout; malformed LLM response.
+**Possible Errors**: No relevant chunks found for the question; Groq API rate limit or timeout; malformed LLM response.
 
 ---
 
@@ -428,7 +428,7 @@ Version 1 of the API does not implement authentication; all endpoints are curren
 - Every error response follows the standard envelope defined in Section 6.
 - HTTP status codes are chosen to accurately reflect the nature of the failure (client error vs. server error vs. upstream dependency failure), per the code table established in `PROJECT_RULES.md`.
 - Validation errors (missing/malformed fields) always return `400 Bad Request` with a message identifying the specific invalid field.
-- Errors originating from an external dependency (e.g., Gemini API failure) are returned as `502 Bad Gateway`, distinguishing them clearly from internal application bugs (`500 Internal Server Error`).
+- Errors originating from an external dependency (e.g., Groq API failure) are returned as `502 Bad Gateway`, distinguishing them clearly from internal application bugs (`500 Internal Server Error`).
 - Every error, regardless of status code, is logged internally with full contextual detail (per the Logging Standards in `PROJECT_RULES.md`), even though that detail is never returned to the client.
 
 ---
@@ -441,7 +441,7 @@ The API will adopt **URL-based versioning** (e.g., `/api/v1/upload`, `/api/v1/as
 
 ## 10. Rate Limiting
 
-Version 1 does not implement rate limiting, but the API is designed to accommodate it in the future, particularly for endpoints that trigger costly downstream operations (`/ask`, `/summarize`, `/compare`), since these invoke the Gemini API and are subject to its own quota constraints. Future rate limiting will likely be applied per user/session (once authentication exists) or per IP address (in the interim), using a sliding-window or token-bucket strategy at the API Layer, returning a `429 Too Many Requests` status code with a clear retry-after indication when a client exceeds its allotted request rate. Rate limiting will be introduced as middleware, consistent with the layered error-handling and validation approach already established, rather than embedded ad hoc within individual endpoint logic.
+Version 1 does not implement rate limiting, but the API is designed to accommodate it in the future, particularly for endpoints that trigger costly downstream operations (`/ask`, `/summarize`, `/compare`), since these invoke the Groq API and are subject to its own quota constraints. Future rate limiting will likely be applied per user/session (once authentication exists) or per IP address (in the interim), using a sliding-window or token-bucket strategy at the API Layer, returning a `429 Too Many Requests` status code with a clear retry-after indication when a client exceeds its allotted request rate. Rate limiting will be introduced as middleware, consistent with the layered error-handling and validation approach already established, rather than embedded ad hoc within individual endpoint logic.
 
 ---
 

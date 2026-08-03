@@ -14,8 +14,8 @@ def _resolve_path(env_key: str, default: str) -> str:
 
 
 class Settings:
-    GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
-    GEMINI_MODEL_NAME: str = os.getenv("GEMINI_MODEL_NAME", "gemini-3.5-flash")
+    GROQ_API_KEY: str | None = os.getenv("GROQ_API_KEY")
+    GROQ_MODEL_NAME: str = os.getenv("GROQ_MODEL_NAME", "llama-3.3-70b-versatile")
     JWT_SECRET_KEY: str | None = os.getenv("JWT_SECRET_KEY")
     UPLOAD_DIRECTORY: str = _resolve_path("UPLOAD_DIRECTORY", "uploads")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "mongodb://localhost:27017/research_assistant")
@@ -31,12 +31,13 @@ class Settings:
     DEFAULT_TOP_K: int = 5
     VECTOR_SEARCH_OVERSAMPLE_FACTOR: int = 3
     VECTOR_SEARCH_MAX_OVERSAMPLE_FACTOR: int = 32
+    GAP_MAP_CONCURRENCY: int = int(os.getenv("GAP_MAP_CONCURRENCY", "5"))
     EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
 
     def validate_required(self):
         missing = []
-        if not self.GEMINI_API_KEY:
-            missing.append("GEMINI_API_KEY")
+        if not self.GROQ_API_KEY:
+            missing.append("GROQ_API_KEY")
         if not self.JWT_SECRET_KEY:
             missing.append("JWT_SECRET_KEY")
         if missing:

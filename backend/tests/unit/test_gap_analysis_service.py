@@ -10,12 +10,12 @@ def mock_deps():
         patch("backend.services.gap_analysis_service.paper_model") as mock_paper,
         patch("backend.services.gap_analysis_service.chunk_model") as mock_chunks,
         patch("backend.services.gap_analysis_service.embedding_service") as mock_embed,
-        patch("backend.services.gap_analysis_service.gemini_service") as mock_gemini,
+        patch("backend.services.gap_analysis_service.groq_service") as mock_groq,
         patch("backend.services.gap_analysis_service.vector_store") as mock_vs,
     ):
         mock_embed.generate_embedding.return_value = [0.1] * 384
-        mock_gemini.extract_paper_gaps.return_value = "Limitations: None. Future Work: None."
-        mock_gemini.synthesize_research_gaps.return_value = (
+        mock_groq.extract_paper_gaps.return_value = "Limitations: None. Future Work: None."
+        mock_groq.synthesize_research_gaps.return_value = (
             "Gap 1:\n"
             "Gap: Model generalization is limited.\n"
             "Supporting Papers: 507f1f77bcf86cd799439011, 507f1f77bcf86cd799439012\n"
@@ -42,7 +42,7 @@ def mock_deps():
             "paper": mock_paper,
             "chunks": mock_chunks,
             "embed": mock_embed,
-            "gemini": mock_gemini,
+            "groq": mock_groq,
             "vector_store": mock_vs,
         }
 
@@ -55,24 +55,24 @@ VALID_IDS = [
 
 class TestGapAnalysisService:
     def test_map_step_called_once_per_paper(self, mock_deps):
-        mock_deps["gemini"].extract_paper_gaps.side_effect = [
+        mock_deps["groq"].extract_paper_gaps.side_effect = [
             "Summary A.",
             "Summary B.",
         ]
         result = gap_analysis_service.analyze_research_gaps(VALID_IDS, "user_1")
 
-        assert mock_deps["gemini"].extract_paper_gaps.call_count == 2
+        assert mock_deps["groq"].extract_paper_gaps.call_count == 2
         assert mock_deps["vector_store"].search.call_count == 2
         assert len(result["per_paper_summaries"]) == 2
 
     def test_reduce_receives_all_per_paper_summaries(self, mock_deps):
-        mock_deps["gemini"].extract_paper_gaps.side_effect = [
+        mock_deps["groq"].extract_paper_gaps.side_effect = [
             "Limitations of A.",
             "Limitations of B.",
         ]
         result = gap_analysis_service.analyze_research_gaps(VALID_IDS, "user_1")
 
-        args, _ = mock_deps["gemini"].synthesize_research_gaps.call_args
+        args, _ = mock_deps["groq"].synthesize_research_gaps.call_args
         summaries_blob = args[0]
         assert "Limitations of A." in summaries_blob
         assert "Limitations of B." in summaries_blob
@@ -136,17 +136,17 @@ class TestGapAnalysisService:
         assert exc.value.status_code == 422
         assert exc.value.code == "PAPER_NOT_PROCESSED"
 
-    def test_gemini_map_failure_propagates(self, mock_deps):
-        mock_deps["gemini"].extract_paper_gaps.side_effect = AppError(
-            message="boom", status_code=502, code="GEMINI_ERROR"
+    def test_groq_map_failure_propagates(self, mock_deps):
+        mock_deps["groq"].extract_paper_gaps.side_effect = AppError(
+            message="boom", status_code=502, code="GROQ_ERROR"
         )
         with pytest.raises(AppError) as exc:
             gap_analysis_service.analyze_research_gaps(VALID_IDS, "user_1")
         assert exc.value.status_code == 502
-        assert exc.value.code == "GEMINI_ERROR"
+        assert exc.value.code == "GROQ_ERROR"
 
     def test_gap_without_supporting_papers_is_dropped(self, mock_deps):
-        mock_deps["gemini"].synthesize_research_gaps.return_value = (
+        mock_deps["groq"].synthesize_research_gaps.return_value = (
             "Gap 1:\n"
             "Gap: Ungrounded gap.\n"
             "Supporting Papers: unknown\n"

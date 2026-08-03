@@ -8,14 +8,14 @@ Intelligent RAG-based research paper Q&A system. Upload PDFs, ask questions, get
 
 - Python 3.12+
 - Node.js 22+
-- A [Gemini API key](https://aistudio.google.com/apikey)
+- A [Groq API key](https://console.groq.com/keys) (free tier included)
 
 ### 1. Clone & configure
 
 ```bash
 git clone https://github.com/Haiderj01/research-assistant.git
 cd research-assistant
-cp .env.example .env    # edit with your Gemini API key
+cp .env.example .env    # edit with your Groq API key
 ```
 
 ### 2. Backend
@@ -49,7 +49,8 @@ Variables go in `.env` at the project root:
 
 | Variable | Default | Description |
 |---|---|---|
-| `GEMINI_API_KEY` | — | Google Gemini API key **(required)** |
+| `GROQ_API_KEY` | — | Groq API key (free tier) **(required)** |
+| `GROQ_MODEL_NAME` | `llama-3.3-70b-versatile` | Groq model to use for generation |
 | `JWT_SECRET_KEY` | — | Secret used to sign JWT auth tokens **(required)** |
 | `APPLICATION_PORT` | `5000` | Backend server port |
 | `DATABASE_URL` | `mongodb://localhost:27017/research_assistant` | MongoDB connection string (optional — uses in-memory mock if unavailable) |
@@ -84,7 +85,7 @@ backend/              Flask API + AI pipeline
 ├── middlewares/      Error handling
 ├── models/           MongoDB document models
 ├── routes/           URL → controller mapping
-├── services/         Core business logic (PDF, chunking, embeddings, RAG, Gemini)
+├── services/         Core business logic (PDF, chunking, embeddings, RAG, LLM)
 └── tests/            Unit and integration tests
 
 frontend/             React + Vite + Tailwind
@@ -107,7 +108,7 @@ docs/                 Design documentation
 | Database | MongoDB (or mongomock in-memory) |
 | Vector Store | FAISS |
 | Embeddings | Sentence Transformers (all-MiniLM-L6-v2) |
-| LLM | Google Gemini 3.1 Flash Lite |
+| LLM | Groq (llama-3.3-70b) |
 | PDF | PyMuPDF |
 
 ## Documentation
