@@ -19,6 +19,7 @@ export default function ChatPage() {
   const endRef = useRef(null);
 
   const processedPapers = papers.filter((p) => p.status === "processed");
+  const papersById = new Map(papers.map((p) => [p.id, p]));
 
   const urlConversationId = searchParams.get("conversationId");
   const initialLoadDone = useRef(false);
@@ -141,12 +142,28 @@ export default function ChatPage() {
               <summary className="cursor-pointer hover:text-primary">
                 Sources ({sources.length})
               </summary>
-              <ul className="mt-2 space-y-1">
-                {sources.map((s, i) => (
-                  <li key={i} className="truncate">
-                    [{s.score.toFixed(2)}] {s.text?.slice(0, 100)}...
-                  </li>
-                ))}
+              <ul className="mt-2 space-y-2">
+                {sources.map((s, i) => {
+                  const paper = papersById.get(s.paper_id);
+                  return (
+                    <li key={i} className="border border-border rounded-lg p-2">
+                      <details>
+                        <summary className="cursor-pointer hover:text-primary">
+                          <span className="font-medium text-primary">
+                            {paper?.title || "Unknown paper"}
+                          </span>
+                          {s.page_number != null && (
+                            <span className="text-muted"> — p.{s.page_number}</span>
+                          )}
+                          <span className="text-muted"> · score {s.score.toFixed(2)}</span>
+                        </summary>
+                        <p className="mt-2 whitespace-pre-wrap text-secondary">
+                          {s.text}
+                        </p>
+                      </details>
+                    </li>
+                  );
+                })}
               </ul>
             </details>
           )}
