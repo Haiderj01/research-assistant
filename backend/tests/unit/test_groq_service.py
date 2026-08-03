@@ -83,6 +83,20 @@ class TestAnswerQuestion:
         assert exc.value.code == "GROQ_ERROR"
         assert client.chat.completions.create.call_count == 3
 
+    def test_fails_fast_on_long_rate_limit_reset(self):
+        client = MagicMock()
+        err = Exception("429 RATE_LIMIT")
+        err.response = MagicMock()
+        err.response.headers = {"retry-after": "18000"}
+        client.chat.completions.create.side_effect = err
+        with patch("backend.services.groq_service._get_client", return_value=client):
+            with patch("backend.services.groq_service.time.sleep") as mock_sleep:
+                with pytest.raises(AppError) as exc:
+                    answer_question(context="text", question="q")
+        assert exc.value.code == "GROQ_ERROR"
+        assert mock_sleep.call_count == 0
+        assert client.chat.completions.create.call_count == 1
+
 
 class TestGenerateSummary:
     def test_returns_summary(self):

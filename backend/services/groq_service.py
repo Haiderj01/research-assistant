@@ -8,6 +8,9 @@ from backend.utils.logger import logger
 
 _PROMPT_DIR = os.path.join(os.path.dirname(__file__), "prompts")
 
+_MAX_RETRY_DELAY_SECONDS = 60
+_MAX_ATTEMPTS = 3
+
 
 def _load_prompt(name: str) -> str:
     path = os.path.join(_PROMPT_DIR, name)
@@ -79,7 +82,7 @@ def _generate(prompt: str, system_instruction: str | None = None) -> str:
     messages.append({"role": "user", "content": prompt})
 
     last_error = None
-    for attempt in range(3):
+    for attempt in range(_MAX_ATTEMPTS):
         try:
             response = client.chat.completions.create(
                 model=model_name,
@@ -100,16 +103,29 @@ def _generate(prompt: str, system_instruction: str | None = None) -> str:
         except Exception as e:
             last_error = e
             error_str = str(e)
-            if not _is_retryable(error_str) or attempt == 2:
+            if not _is_retryable(error_str) or attempt == _MAX_ATTEMPTS - 1:
                 break
-            delay = _extract_retry_delay(e) or (2 ** attempt * 5)
+            suggested = _extract_retry_delay(e)
+            if suggested > _MAX_RETRY_DELAY_SECONDS:
+                logger.warning(
+                    f"LLM rate limit with long reset ({suggested:.0f}s); "
+                    "failing fast per quota limit."
+                )
+                break
+            delay = suggested or (2 ** attempt * 5)
             logger.warning(
-                f"LLM transient error, retrying in {delay:.0f}s (attempt {attempt + 1}/3)"
+                f"LLM transient error, retrying in {delay:.0f}s (attempt {attempt + 1}/{_MAX_ATTEMPTS})"
             )
             time.sleep(delay)
 
     logger.exception("LLM API call failed")
-    msg = str(last_error) if settings.DEBUG_MODE else "The AI generation service is temporarily unavailable. Please try again."
+    if "RATE_LIMIT" in str(last_error) or "429" in str(last_error):
+        msg = (
+            "The AI service has reached its rate or usage limit for now. "
+            "Please wait a few minutes and try again."
+        )
+    else:
+        msg = str(last_error) if settings.DEBUG_MODE else "The AI generation service is temporarily unavailable. Please try again."
     raise AppError(
         message=msg,
         status_code=502,
