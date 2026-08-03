@@ -36,6 +36,47 @@ class TestAnswerQuestion:
                 answer_question(context="text", question="q")
             assert exc.value.code == "GEMINI_ERROR"
 
+    def test_retries_on_503_unavailable(self):
+        client = MagicMock()
+        response = MagicMock()
+        response.text = "Recovered response."
+        client.models.generate_content.side_effect = [
+            Exception("{'error': {'code': 503, 'status': 'UNAVAILABLE'}}"),
+            response,
+        ]
+        with patch("backend.services.gemini_service._get_client", return_value=client):
+            with patch("backend.services.gemini_service.time.sleep") as mock_sleep:
+                result = answer_question(context="text", question="q")
+        assert result == "Recovered response."
+        assert mock_sleep.call_count == 1
+        assert client.models.generate_content.call_count == 2
+
+    def test_retries_on_429_quota(self):
+        client = MagicMock()
+        response = MagicMock()
+        response.text = "Recovered response."
+        client.models.generate_content.side_effect = [
+            Exception("429 RESOURCE_EXHAUSTED"),
+            response,
+        ]
+        with patch("backend.services.gemini_service._get_client", return_value=client):
+            with patch("backend.services.gemini_service.time.sleep") as mock_sleep:
+                result = answer_question(context="text", question="q")
+        assert result == "Recovered response."
+        assert mock_sleep.call_count == 1
+
+    def test_gives_up_after_three_attempts(self):
+        client = MagicMock()
+        client.models.generate_content.side_effect = Exception(
+            "{'error': {'code': 503, 'status': 'UNAVAILABLE'}}"
+        )
+        with patch("backend.services.gemini_service._get_client", return_value=client):
+            with patch("backend.services.gemini_service.time.sleep"):
+                with pytest.raises(AppError) as exc:
+                    answer_question(context="text", question="q")
+        assert exc.value.code == "GEMINI_ERROR"
+        assert client.models.generate_content.call_count == 3
+
 
 class TestGenerateSummary:
     def test_returns_summary(self):

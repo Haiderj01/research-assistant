@@ -34,6 +34,21 @@ def _extract_retry_delay(error_msg: str) -> float:
     return float(match.group(1)) if match else 0
 
 
+def _is_retryable(error_msg: str) -> bool:
+    """Return True if the Gemini error is transient and worth retrying.
+
+    Retries quota exhaustion (429 / RESOURCE_EXHAUSTED) and transient
+    model-unavailability errors (503 / UNAVAILABLE), which signal high
+    demand that typically subsides within seconds.
+    """
+    return (
+        "429" in error_msg
+        or "RESOURCE_EXHAUSTED" in error_msg
+        or "503" in error_msg
+        or "UNAVAILABLE" in error_msg
+    )
+
+
 def _generate(prompt: str, system_instruction: str | None = None) -> str:
     client = _get_client()
     config = types.GenerateContentConfig(
@@ -72,11 +87,12 @@ def _generate(prompt: str, system_instruction: str | None = None) -> str:
         except Exception as e:
             last_error = e
             error_str = str(e)
-            is_quota = "429" in error_str or "RESOURCE_EXHAUSTED" in error_str
-            if not is_quota or attempt == 2:
+            if not _is_retryable(error_str) or attempt == 2:
                 break
             delay = _extract_retry_delay(error_str) or (2 ** attempt * 5)
-            logger.warning(f"Gemini quota exhausted, retrying in {delay:.0f}s (attempt {attempt + 1}/3)")
+            logger.warning(
+                f"Gemini transient error, retrying in {delay:.0f}s (attempt {attempt + 1}/3)"
+            )
             time.sleep(delay)
 
     logger.exception("Gemini API call failed")
