@@ -20,6 +20,6 @@ Description of the second point goes here.
 3. Third point
 Description of the third point goes here.
 
-Based solely on the context above, provide a thorough answer to the question. If the context lacks sufficient information to fully answer, acknowledge what is missing. Reference the source sections where applicable.
+Answer the question using ONLY the context provided. Do not use or rely on any outside knowledge. Every statement you make must be grounded in the context text; if a claim is not supported by the context, do not include it. Do not add facts, details, or points that the question did not ask for. Only say the context is insufficient if it genuinely cannot answer the core of the question, and say so in a single short sentence without speculating. Reference the source sections where applicable.
 
 Respond in clean plain text only — no markdown formatting (no *, #, -, or any other markdown symbols). Use numbered sections and plain labels with colons for structure.
