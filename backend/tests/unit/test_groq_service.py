@@ -4,6 +4,7 @@ from backend.services.groq_service import (
     answer_question,
     generate_summary,
     generate_comparison,
+    merge_summaries,
 )
 from backend.middlewares.error_handler import AppError
 
@@ -101,6 +102,12 @@ class TestAnswerQuestion:
 class TestGenerateSummary:
     def test_returns_summary(self):
         result = generate_summary(context="Paper content here.")
+        assert result == "This is a generated response."
+
+
+class TestMergeSummaries:
+    def test_returns_merged_summary(self):
+        result = merge_summaries(["Part A summary.", "Part B summary."])
         assert result == "This is a generated response."
 
 

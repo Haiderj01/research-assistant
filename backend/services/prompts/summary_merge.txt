@@ -13,7 +13,16 @@ Organize the final summary into the following sections using plain text only:
 3. Key Results — What are the main findings or results?
 4. Conclusion — What conclusions do the authors draw?
 
-Do not repeat information across the partial summaries. Combine overlapping points. If a partial summary says a section was not determinable from its portion, try to fill it from other parts if possible; otherwise state that explicitly.
+CRITICAL DEDUPLICATION RULES:
+- If two or more partial summaries state the same fact, finding, or contribution (even if worded differently), state it ONCE. Do not repeat it in multiple sections or multiple lines.
+- When the same claim appears with slightly different wording, merge them into a single, consistent sentence rather than listing both versions.
+- Keep every distinct fact from the partial summaries. Deduplication must not drop information — only merge identical or near-identical claims.
+
+CRITICAL CONTRADICTION RULES:
+- If two partial summaries directly contradict each other (e.g., one says the method is X, another says it is Y), do NOT silently pick one. State the disagreement explicitly in the relevant section, for example: "The paper reports conflicting descriptions of the method (one part states X, another states Y)."
+- If the contradiction is only apparent because the claims are unrelated or address different aspects, do not force them together; present each claim as its own distinct point.
+
+If a partial summary says a section was not determinable from its portion, try to fill it from other parts if possible; otherwise state that explicitly.
 
 CRITICAL: Start each of the 4 sections on a new line with a blank line between sections. Put each distinct finding on its own line. Never write in dense paragraphs. Keep each section brief (2-4 sentences).
 
