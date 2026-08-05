@@ -3,6 +3,34 @@ from bson import ObjectId
 from backend.middlewares.error_handler import AppError
 from backend.models import paper_model, chunk_model
 from backend.services import groq_service
+from backend.config.settings import settings
+
+
+def _batch_chunks(chunks: list[dict], budget: int) -> list[list[dict]]:
+    """Split chunks into batches that each fit under the LLM input budget.
+
+    Each batch's joined text (plus a per-batch header allowance) stays
+    within ``budget`` so a full-paper summary is produced from every part
+    of the paper, not just the beginning.
+    """
+    header_allowance = 500
+    batches = []
+    current: list[dict] = []
+    current_len = 0
+    for chunk in chunks:
+        text = chunk.get("chunk_text", "")
+        if not text:
+            continue
+        chunk_len = len(text)
+        if current and current_len + chunk_len + header_allowance > budget:
+            batches.append(current)
+            current = []
+            current_len = 0
+        current.append(chunk)
+        current_len += chunk_len
+    if current:
+        batches.append(current)
+    return batches
 
 
 def handle_summarize():
@@ -64,9 +92,16 @@ def handle_summarize():
             code="NO_CONTENT",
         )
 
-    context = "\n\n".join(c["chunk_text"] for c in chunks)
-
-    summary = groq_service.generate_summary(context)
+    batches = _batch_chunks(chunks, settings.MAX_LLM_INPUT_CHARS)
+    if len(batches) == 1:
+        context = "\n\n".join(c["chunk_text"] for c in batches[0])
+        summary = groq_service.generate_summary(context)
+    else:
+        partials = []
+        for batch in batches:
+            context = "\n\n".join(c["chunk_text"] for c in batch)
+            partials.append(groq_service.generate_summary(context))
+        summary = groq_service.merge_summaries(partials)
     paper_model.update_paper(paper_id, {"summary": summary})
 
     return jsonify({

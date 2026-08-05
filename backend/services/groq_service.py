@@ -192,6 +192,23 @@ def generate_comparison(context: str, dimensions: list[str]) -> str:
     return _generate(prompt, system_instruction=system)
 
 
+def merge_summaries(partials: list[str]) -> str:
+    """Merge per-batch summaries of a paper into one complete summary.
+
+    Args:
+        partials: List of section-by-section summaries, one per chunk batch.
+
+    Returns:
+        A single structured summary covering the entire paper.
+    """
+    system = _load_prompt("system.txt")
+    template = _load_prompt("summary_merge.txt")
+    parts = "\n\n".join(f"--- Part {i + 1} ---\n{p}" for i, p in enumerate(partials))
+    prompt = template.replace("{parts}", parts)
+    logger.info(f"Merging {len(partials)} partial summaries into a full summary")
+    return _generate(prompt, system_instruction=system)
+
+
 def extract_paper_gaps(context: str) -> str:
     """Extract a single paper's stated limitations and future work.
 

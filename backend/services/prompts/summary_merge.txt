@@ -1,0 +1,20 @@
+=== PARTIAL SUMMARIES ===
+
+{parts}
+
+=== INSTRUCTIONS ===
+
+The text above contains several partial summaries of the same research paper, each covering a different portion of the paper. Merge them into ONE complete, concise, structured summary of the entire paper, based solely on the content provided.
+
+Organize the final summary into the following sections using plain text only:
+
+1. Problem / Motivation — What problem does the paper address?
+2. Method / Approach — What method or approach is proposed?
+3. Key Results — What are the main findings or results?
+4. Conclusion — What conclusions do the authors draw?
+
+Do not repeat information across the partial summaries. Combine overlapping points. If a partial summary says a section was not determinable from its portion, try to fill it from other parts if possible; otherwise state that explicitly.
+
+CRITICAL: Start each of the 4 sections on a new line with a blank line between sections. Put each distinct finding on its own line. Never write in dense paragraphs. Keep each section brief (2-4 sentences).
+
+Do NOT use any markdown formatting in your response. No asterisks, hashes, dashes, or markdown symbols. Use plain text with numbered sections and colons for labels.
