@@ -79,7 +79,15 @@ def _generate(prompt: str, system_instruction: str | None = None) -> str:
     messages = []
     if system_instruction:
         messages.append({"role": "system", "content": system_instruction})
-    messages.append({"role": "user", "content": prompt})
+
+    user_content = prompt
+    if len(prompt) > settings.MAX_LLM_INPUT_CHARS:
+        user_content = prompt[: settings.MAX_LLM_INPUT_CHARS]
+        logger.warning(
+            f"Truncating LLM prompt from {len(prompt)} to "
+            f"{len(user_content)} chars to fit the model's token limit"
+        )
+    messages.append({"role": "user", "content": user_content})
 
     last_error = None
     for attempt in range(_MAX_ATTEMPTS):

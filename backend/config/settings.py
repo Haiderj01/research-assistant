@@ -32,6 +32,7 @@ class Settings:
     VECTOR_SEARCH_OVERSAMPLE_FACTOR: int = 3
     VECTOR_SEARCH_MAX_OVERSAMPLE_FACTOR: int = 32
     GAP_MAP_CONCURRENCY: int = int(os.getenv("GAP_MAP_CONCURRENCY", "5"))
+    MAX_LLM_INPUT_CHARS: int = int(os.getenv("MAX_LLM_INPUT_CHARS", "32000"))
     EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
 
     def validate_required(self):
