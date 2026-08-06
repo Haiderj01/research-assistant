@@ -1,6 +1,26 @@
 # AI Research Assistant
 
-Intelligent RAG-based research paper Q&A system. Upload PDFs, ask questions, get summaries, and compare papers using AI.
+A RAG-based research paper Q&A system. Upload PDFs, ask questions, get summaries, and compare papers.
+
+## Features
+
+- Upload and auto-process PDFs (extraction -> chunking -> embedding -> FAISS indexing)
+- Ask questions with answers cited to source pages
+- Paper summaries and side-by-side comparison
+- Gap analysis across papers
+- JWT authentication
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Python, Flask, PyMongo |
+| Frontend | React, Vite, Tailwind CSS |
+| Database | MongoDB / Atlas |
+| Vector Store | FAISS |
+| Embeddings | Sentence Transformers (all-MiniLM-L6-v2) |
+| LLM | Groq (llama-3.3-70b) |
+| PDF | PyMuPDF |
 
 ## Quick Start
 
@@ -8,14 +28,14 @@ Intelligent RAG-based research paper Q&A system. Upload PDFs, ask questions, get
 
 - Python 3.12+
 - Node.js 22+
-- A [Groq API key](https://console.groq.com/keys) (free tier included)
+- A [Groq API key](https://console.groq.com/keys)
 
 ### 1. Clone & configure
 
 ```bash
 git clone https://github.com/Haiderj01/research-assistant.git
 cd research-assistant
-cp .env.example .env    # edit with your Groq API key
+cp .env.example .env      # add your Groq API key and MongoDB connection string
 ```
 
 ### 2. Backend
@@ -35,27 +55,21 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:3000**. The frontend proxies `/api` requests to the backend.
+Open http://localhost:3000.
 
-### Notes
-
-- **MongoDB not required** — falls back to an in-memory mock automatically
-- **macOS FAISS + PyTorch** — the `OMP_NUM_THREADS=1` flag avoids a known segfault
-- **Port 5000** — used by AirPlay Receiver on macOS; set `APPLICATION_PORT=5001` in `.env` if needed
+> **Note:** Without MongoDB running, the app falls back to an in-memory mock (data resets on restart). The `OMP_NUM_THREADS=1` flag avoids a known macOS FAISS segfault.
 
 ## Configuration
 
-Variables go in `.env` at the project root:
+Set these in `.env` at the project root:
 
-| Variable | Default | Description |
-|---|---|---|
-| `GROQ_API_KEY` | — | Groq API key (free tier) **(required)** |
-| `GROQ_MODEL_NAME` | `llama-3.3-70b-versatile` | Groq model to use for generation |
-| `JWT_SECRET_KEY` | — | Secret used to sign JWT auth tokens **(required)** |
-| `APPLICATION_PORT` | `5000` | Backend server port |
-| `DATABASE_URL` | `mongodb://localhost:27017/research_assistant` | MongoDB connection string (optional — uses in-memory mock if unavailable) |
-| `DEBUG_MODE` | `false` | Enables Flask debug mode |
-| `LOGGING_LEVEL` | `INFO` | Log verbosity |
+| Variable | Description |
+|---|---|
+| `GROQ_API_KEY` | **Required.** Groq API key (free tier) |
+| `DATABASE_URL` | **Required.** MongoDB / Atlas connection string |
+| `JWT_SECRET_KEY` | **Required.** Secret used to sign auth tokens |
+| `GROQ_MODEL_NAME` | Groq model (defaults to `llama-3.3-70b-versatile`) |
+| `APPLICATION_PORT` | Backend port (defaults to `5003`) |
 
 ## API
 
@@ -63,54 +77,22 @@ All endpoints are prefixed with `/api/v1/`.
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/health` | System health check |
 | `POST` | `/auth/register` | Create an account |
 | `POST` | `/auth/login` | Log in and receive a JWT |
-| `POST` | `/upload` | Upload and auto-process PDF(s) |
-| `POST` | `/ask` | Ask a question (RAG pipeline) |
+| `POST` | `/upload` | Upload and process PDF(s) |
+| `POST` | `/ask` | Ask a question (RAG) |
+| `POST` | `/summarize` | Generate a paper summary |
+| `POST` | `/compare` | Compare multiple papers |
+| `POST` | `/gap-analysis` | Gap analysis across papers |
 | `GET` | `/papers` | List uploaded papers |
 | `GET` | `/paper/:id` | Paper details |
-| `DELETE` | `/paper/:id` | Delete paper + chunks + vectors |
-| `POST` | `/summarize` | Generate paper summary |
-| `POST` | `/compare` | Compare multiple papers |
-| `GET` | `/history` | Conversation and search history |
-| `PATCH` | `/conversation/:id` | Rename a conversation |
+| `DELETE` | `/paper/:id` | Delete a paper |
+| `GET` | `/history` | Conversation / search history |
+| `GET` | `/health` | Health check |
 
-## Project Structure
+## Testing
 
+```bash
+source backend/venv/bin/activate
+OMP_NUM_THREADS=1 TOKENIZERS_PARALLELISM=false python -m pytest backend/tests -q
 ```
-backend/              Flask API + AI pipeline
-├── config/           Settings and environment
-├── controllers/      Request parsing and response formatting
-├── middlewares/      Error handling
-├── models/           MongoDB document models
-├── routes/           URL → controller mapping
-├── services/         Core business logic (PDF, chunking, embeddings, RAG, LLM)
-└── tests/            Unit and integration tests
-
-frontend/             React + Vite + Tailwind
-├── src/api/          Backend API client
-├── src/components/   Reusable UI components
-├── src/context/      Global state (React Context)
-├── src/hooks/        Custom React hooks
-├── src/layouts/      Page layout wrappers
-└── src/pages/        Page views (Upload, Chat, Compare, History, Dashboard)
-
-docs/                 Design documentation
-```
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Backend | Python, Flask |
-| Frontend | React 19, Vite, Tailwind CSS |
-| Database | MongoDB (or mongomock in-memory) |
-| Vector Store | FAISS |
-| Embeddings | Sentence Transformers (all-MiniLM-L6-v2) |
-| LLM | Groq (llama-3.3-70b) |
-| PDF | PyMuPDF |
-
-## Documentation
-
-See `docs/` for detailed design documents covering architecture, database schema, API contracts, and the RAG pipeline.
