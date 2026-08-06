@@ -1,6 +1,7 @@
 import os
 from pymongo import MongoClient, ASCENDING, DESCENDING, TEXT
 from pymongo.errors import ConnectionFailure
+import certifi
 from backend.config.settings import settings
 from backend.utils.logger import logger
 
@@ -10,6 +11,7 @@ class DatabaseService:
 
     _client: MongoClient = None
     _db = None
+    _SERVER_SELECTION_TIMEOUT_MS = 10000
 
     @classmethod
     def connect(cls) -> bool:
@@ -25,14 +27,25 @@ class DatabaseService:
         try:
             cls._client = MongoClient(
                 settings.DATABASE_URL,
-                serverSelectionTimeoutMS=3000,
+                serverSelectionTimeoutMS=cls._SERVER_SELECTION_TIMEOUT_MS,
+                tlsCAFile=certifi.where(),
             )
             cls._client.admin.command("ping")
             cls._db = cls._client.get_default_database()
+            if cls._db is None:
+                cls._db = cls._client["research_assistant"]
             cls._ensure_indexes()
             logger.info("Connected to MongoDB")
             return True
         except ConnectionFailure:
+            if cls._is_remote(settings.DATABASE_URL):
+                logger.exception(
+                    "Failed to connect to configured remote MongoDB; "
+                    "refusing to fall back to the in-memory mock."
+                )
+                cls._client = None
+                cls._db = None
+                return False
             logger.warning("MongoDB connection failed — falling back to in-memory mock database")
             try:
                 import mongomock
@@ -46,6 +59,10 @@ class DatabaseService:
                 cls._client = None
                 cls._db = None
                 return False
+
+    @staticmethod
+    def _is_remote(url: str) -> bool:
+        return url.startswith("mongodb+srv://") or "@" in url
 
     @classmethod
     def get_db(cls):
