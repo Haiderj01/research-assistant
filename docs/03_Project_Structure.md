@@ -72,10 +72,6 @@ research-assistant/
 │
 ├── docs/                         # Project documentation (design documents)
 │
-├── database/                     # Database-related scripts and definitions (schemas, indexes)
-│
-├── scripts/                      # Standalone utility/automation scripts (setup, migration, seeding)
-│
 ├── .env                          # Environment variable definitions (not committed to version control)
 ├── .gitignore                    # Files/folders excluded from version control
 └── README.md                     # Project introduction, setup, and usage instructions
@@ -92,7 +88,7 @@ research-assistant/
 | `config/` | Centralize all application configuration. | Load environment variables; define constants (chunk size, model names, file size limits). | `settings.py` (or equivalent) | `.env` file | Nearly all backend modules read from this. |
 | `controllers/` | Handle the logic behind each API request. | Parse validated request data; invoke the appropriate service; format the response. | `upload_controller`, `query_controller`, `summary_controller`, `comparison_controller` | `services/`, `models/` | Called by `routes/`; calls into `services/`. |
 | `middlewares/` | Apply cross-cutting logic to incoming requests/outgoing responses. | Request validation, centralized error handling, request logging. | `error_handler`, `validation_middleware`, `logging_middleware` | `utils/`, `config/` | Wraps around `routes/` and `controllers/`. |
-| `models/` | Define the structure of data persisted in MongoDB. | Define schemas/data classes for Paper, QueryHistory, User (future), ExtractedMetadata. | `paper_model`, `query_history_model`, `metadata_model` | `database/` (schema definitions) | Used by `services/` for persistence operations. |
+| `models/` | Define the structure of data persisted in MongoDB. | Define schemas/data classes for Paper, QueryHistory, User (future), ExtractedMetadata. | `paper_model`, `query_history_model`, `metadata_model` | `backend/services/database_service.py` (connection) | Used by `services/` for persistence operations. |
 | `routes/` | Define API endpoints and map them to controllers. | Declare URL paths, HTTP methods, and bind them to the correct controller function. | `upload_routes`, `query_routes`, `summary_routes`, `comparison_routes`, `history_routes` | `controllers/` | Registered in `app.py`; the entry point for all frontend requests. |
 | `services/` | Contain the core business logic and AI pipeline. | Implement PDF processing, chunking, embedding generation, vector search, RAG orchestration, Groq integration, analytics. | `pdf_service`, `chunking_service`, `embedding_service`, `vector_store_service`, `rag_service`, `groq_service`, `analytics_service` | External libraries (Sentence Transformers, FAISS, Groq SDK) | Called by `controllers/`; this is the heart of the AI pipeline described in the architecture document. |
 | `utils/` | Provide shared, generic helper functions. | File validation, text cleaning helpers, response formatting, date/time helpers. | `file_utils`, `text_utils`, `response_utils` | None (should remain dependency-light) | Used across `services/`, `controllers/`, `middlewares/`. |
