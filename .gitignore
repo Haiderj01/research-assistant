@@ -15,5 +15,6 @@ build/
 venv/
 .venv/
 *.log
+docs/
 
 
