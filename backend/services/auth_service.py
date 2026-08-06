@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import jwt
+import dns.resolver
 
 from backend.config.settings import settings
 from backend.middlewares.error_handler import AppError
@@ -12,10 +13,74 @@ from backend.utils.logger import logger
 TOKEN_EXPIRY_DAYS = 7
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _MIN_PASSWORD_LENGTH = 8
+_DISPOSABLE_DOMAINS = {
+    "mailinator.com",
+    "guerrillamail.com",
+    "tempmail.com",
+    "10minutemail.com",
+    "throwawaymail.com",
+    "yopmail.com",
+    "sharklasers.com",
+    "trashmail.com",
+    "getnada.com",
+    "maildrop.cc",
+    "dispostable.com",
+    "inboxbear.com",
+    "discard.email",
+    "emailfake.com",
+    "mailnesia.com",
+    "mohmal.com",
+    "disposable-email.com",
+}
+_DNS_TIMEOUT_SECONDS = 3
+
+
+def _domain_has_mail_records(domain: str) -> bool:
+    """Return True if a domain can receive email.
+
+    Checks for a resolvable MX record first, then falls back to A/AAAA
+    records (some valid mail domains rely on implicit delivery without MX).
+
+    Args:
+        domain: The domain part of an email address (lowercased).
+
+    Returns:
+        True if the domain has mail/routing records, False otherwise.
+
+    Raises:
+        AppError: If the domain name itself is malformed.
+    """
+    domain = domain.strip().lower()
+    if not domain or not re.match(r"^[a-z0-9.-]+\.[a-z]{2,}$", domain):
+        raise AppError(
+            message="Please provide a valid email address.",
+            status_code=422,
+            code="INVALID_EMAIL",
+        )
+
+    resolver = dns.resolver.Resolver()
+    resolver.timeout = _DNS_TIMEOUT_SECONDS
+    resolver.lifetime = _DNS_TIMEOUT_SECONDS
+
+    for rtype in ("MX", "A", "AAAA"):
+        try:
+            answers = resolver.resolve(domain, rtype)
+            if answers:
+                return True
+        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
+            continue
+        except dns.resolver.LifetimeTimeout:
+            break
+        except Exception:
+            continue
+    return False
 
 
 def _validate_email(email: str) -> str:
     """Validate and normalize an email address.
+
+    Checks syntax, rejects disposable domains, and verifies the domain
+    can receive email via a DNS lookup.
 
     Args:
         email: The raw email submitted by the user.
@@ -24,7 +89,8 @@ def _validate_email(email: str) -> str:
         The normalized (lowercased, trimmed) email.
 
     Raises:
-        AppError: If the email is empty or malformed.
+        AppError: If the email is empty, malformed, uses a disposable
+        domain, or its domain cannot receive email.
     """
     email = (email or "").strip().lower()
     if not _EMAIL_RE.match(email):
@@ -32,6 +98,21 @@ def _validate_email(email: str) -> str:
             message="Please provide a valid email address.",
             status_code=422,
             code="INVALID_EMAIL",
+        )
+
+    domain = email.split("@", 1)[1]
+    if domain in _DISPOSABLE_DOMAINS:
+        raise AppError(
+            message="Please use a real, non-disposable email address.",
+            status_code=422,
+            code="DISPOSABLE_EMAIL",
+        )
+
+    if not _domain_has_mail_records(domain):
+        raise AppError(
+            message="The email domain does not appear to accept email.",
+            status_code=422,
+            code="INVALID_EMAIL_DOMAIN",
         )
     return email
 

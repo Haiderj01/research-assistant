@@ -14,12 +14,14 @@ def mock_deps():
     with (
         patch("backend.services.auth_service.user_model") as mock_user,
         patch("backend.services.auth_service.bcrypt") as mock_bcrypt,
+        patch("backend.services.auth_service._domain_has_mail_records", return_value=True) as mock_domain,
     ):
         mock_bcrypt.hashpw.return_value = b"$2b$12$hashedpasswordvalue"
         mock_bcrypt.checkpw.return_value = True
         yield {
             "user_model": mock_user,
             "bcrypt": mock_bcrypt,
+            "domain": mock_domain,
         }
 
 
@@ -108,6 +110,28 @@ class TestRegisterUser:
             auth_service.register_user("not-an-email", "password123")
         assert exc.value.status_code == 422
         assert exc.value.code == "INVALID_EMAIL"
+
+    def test_register_disposable_email(self, mock_deps):
+        with pytest.raises(AppError) as exc:
+            auth_service.register_user("user@mailinator.com", "password123")
+        assert exc.value.status_code == 422
+        assert exc.value.code == "DISPOSABLE_EMAIL"
+        mock_deps["domain"].assert_not_called()
+
+    def test_register_domain_without_mail_records(self, mock_deps):
+        mock_deps["domain"].return_value = False
+        with pytest.raises(AppError) as exc:
+            auth_service.register_user("user@nonexistent-domain-xyz.com", "password123")
+        assert exc.value.status_code == 422
+        assert exc.value.code == "INVALID_EMAIL_DOMAIN"
+
+    def test_register_checks_domain_dns(self, mock_deps):
+        mock_deps["user_model"].get_user_by_email.return_value = None
+        mock_deps["user_model"].create_user.return_value = _user()
+
+        auth_service.register_user("test@example.com", "password123")
+
+        mock_deps["domain"].assert_called_once_with("example.com")
 
 
 class TestLoginUser:

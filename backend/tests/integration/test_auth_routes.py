@@ -13,6 +13,11 @@ def set_secret(monkeypatch):
     monkeypatch.setattr(auth_service.settings, "JWT_SECRET_KEY", TEST_SECRET)
 
 
+@pytest.fixture(autouse=True)
+def mock_domain(monkeypatch):
+    monkeypatch.setattr(auth_service, "_domain_has_mail_records", lambda domain: True)
+
+
 @pytest.fixture
 def app():
     application = create_app()
@@ -61,6 +66,19 @@ class TestRegister:
     def test_register_invalid_json(self, client):
         resp = client.post("/api/v1/auth/register", data="not-json", content_type="application/json")
         assert resp.status_code == 400
+
+    def test_register_disposable_email(self, client):
+        resp = _register(client, email="user@mailinator.com")
+        assert resp.status_code == 422
+        assert resp.get_json()["error"]["code"] == "DISPOSABLE_EMAIL"
+
+    def test_register_domain_without_mail_records(self, client, monkeypatch):
+        monkeypatch.setattr(
+            auth_service, "_domain_has_mail_records", lambda domain: False
+        )
+        resp = _register(client, email="user@nonexistent-domain-xyz.com")
+        assert resp.status_code == 422
+        assert resp.get_json()["error"]["code"] == "INVALID_EMAIL_DOMAIN"
 
 
 class TestLogin:
