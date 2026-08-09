@@ -16,5 +16,4 @@ venv/
 .venv/
 *.log
 docs/
-
-
+.opencode/
