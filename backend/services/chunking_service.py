@@ -1,5 +1,5 @@
 import re
-from backend.config.settings import settings
+from backend.config import settings
 from backend.utils.logger import logger
 
 

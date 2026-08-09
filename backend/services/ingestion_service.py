@@ -2,7 +2,7 @@ import os
 import uuid
 import threading
 from werkzeug.utils import secure_filename
-from backend.config.settings import settings
+from backend.config import settings
 from backend.services import pdf_service, chunking_service, embedding_service
 from backend.services.vector_store_service import vector_store
 from backend.models import paper_model, chunk_model

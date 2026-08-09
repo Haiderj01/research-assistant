@@ -1,7 +1,7 @@
 from backend.services import embedding_service, groq_service
 from backend.services.vector_store_service import vector_store
 from backend.models import chunk_model, conversation_model, question_model, search_history_model
-from backend.config.settings import settings
+from backend.config import settings
 from backend.middlewares.error_handler import AppError
 from backend.utils.logger import logger
 
@@ -75,7 +75,7 @@ def answer_query(
         chunk = chunks_by_id.get(cid)
         if chunk and str(chunk["paper_id"]) in paper_ids:
             source_chunks.append({
-                "chunk_id": cid,
+                "chunk_id": r["chunk_id"],
                 "chunk_mongo_id": str(chunk["_id"]),
                 "text": chunk["chunk_text"],
                 "paper_id": str(chunk["paper_id"]),

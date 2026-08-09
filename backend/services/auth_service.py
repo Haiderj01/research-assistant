@@ -5,7 +5,7 @@ import bcrypt
 import jwt
 import dns.resolver
 
-from backend.config.settings import settings
+from backend.config import settings
 from backend.middlewares.error_handler import AppError
 from backend.models import user_model
 from backend.utils.logger import logger

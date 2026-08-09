@@ -13,39 +13,36 @@ def _resolve_path(env_key: str, default: str) -> str:
     return os.path.join(_BASE_DIR, val)
 
 
-class Settings:
-    GROQ_API_KEY: str | None = os.getenv("GROQ_API_KEY")
-    GROQ_MODEL_NAME: str = os.getenv("GROQ_MODEL_NAME", "llama-3.3-70b-versatile")
-    JWT_SECRET_KEY: str | None = os.getenv("JWT_SECRET_KEY")
-    UPLOAD_DIRECTORY: str = _resolve_path("UPLOAD_DIRECTORY", "uploads")
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "mongodb://localhost:27017/research_assistant")
-    VECTOR_STORE_PATH: str = _resolve_path("VECTOR_STORE_PATH", "vector_store")
-    APPLICATION_PORT: int = int(os.getenv("APPLICATION_PORT", "5003"))
-    DEBUG_MODE: bool = os.getenv("DEBUG_MODE", "false").lower() == "true"
-    LOGGING_LEVEL: str = os.getenv("LOGGING_LEVEL", "INFO").upper()
+GROQ_API_KEY: str | None = os.getenv("GROQ_API_KEY")
+GROQ_MODEL_NAME: str = os.getenv("GROQ_MODEL_NAME", "llama-3.3-70b-versatile")
+JWT_SECRET_KEY: str | None = os.getenv("JWT_SECRET_KEY")
+UPLOAD_DIRECTORY: str = _resolve_path("UPLOAD_DIRECTORY", "uploads")
+DATABASE_URL: str = os.getenv("DATABASE_URL", "mongodb://localhost:27017/research_assistant")
+VECTOR_STORE_PATH: str = _resolve_path("VECTOR_STORE_PATH", "vector_store")
+APPLICATION_PORT: int = int(os.getenv("APPLICATION_PORT", "5003"))
+DEBUG_MODE: bool = os.getenv("DEBUG_MODE", "false").lower() == "true"
+LOGGING_LEVEL: str = os.getenv("LOGGING_LEVEL", "INFO").upper()
 
-    MAX_FILE_SIZE_MB: int = 50
-    ALLOWED_EXTENSIONS: set = {".pdf"}
-    DEFAULT_CHUNK_SIZE: int = 500
-    DEFAULT_CHUNK_OVERLAP: int = 50
-    DEFAULT_TOP_K: int = 5
-    VECTOR_SEARCH_OVERSAMPLE_FACTOR: int = 3
-    VECTOR_SEARCH_MAX_OVERSAMPLE_FACTOR: int = 32
-    GAP_MAP_CONCURRENCY: int = int(os.getenv("GAP_MAP_CONCURRENCY", "5"))
-    MAX_LLM_INPUT_CHARS: int = int(os.getenv("MAX_LLM_INPUT_CHARS", "32000"))
-    EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
-
-    def validate_required(self):
-        missing = []
-        if not self.GROQ_API_KEY:
-            missing.append("GROQ_API_KEY")
-        if not self.JWT_SECRET_KEY:
-            missing.append("JWT_SECRET_KEY")
-        if missing:
-            raise RuntimeError(
-                f"Missing required environment variables: {', '.join(missing)}. "
-                f"Set them in a .env file or export them before starting the server."
-            )
+MAX_FILE_SIZE_MB: int = 50
+ALLOWED_EXTENSIONS: set = {".pdf"}
+DEFAULT_CHUNK_SIZE: int = 500
+DEFAULT_CHUNK_OVERLAP: int = 50
+DEFAULT_TOP_K: int = 5
+VECTOR_SEARCH_OVERSAMPLE_FACTOR: int = 3
+VECTOR_SEARCH_MAX_OVERSAMPLE_FACTOR: int = 32
+GAP_MAP_CONCURRENCY: int = int(os.getenv("GAP_MAP_CONCURRENCY", "5"))
+MAX_LLM_INPUT_CHARS: int = int(os.getenv("MAX_LLM_INPUT_CHARS", "32000"))
+EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
 
 
-settings = Settings()
+def validate_required():
+    missing = []
+    if not GROQ_API_KEY:
+        missing.append("GROQ_API_KEY")
+    if not JWT_SECRET_KEY:
+        missing.append("JWT_SECRET_KEY")
+    if missing:
+        raise RuntimeError(
+            f"Missing required environment variables: {', '.join(missing)}. "
+            f"Set them in a .env file or export them before starting the server."
+        )

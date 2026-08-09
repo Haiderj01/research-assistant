@@ -12,7 +12,6 @@ def store():
     vs = VectorStoreService(
         index_path=os.path.join(tmp_dir, "test.faiss"),
         mapping_path=os.path.join(tmp_dir, "test_mapping.json"),
-        vectors_path=os.path.join(tmp_dir, "test_vectors.npy"),
     )
     yield vs
 
@@ -82,7 +81,6 @@ class TestVectorStoreService:
         vs2 = VectorStoreService(
             index_path=store._index_path,
             mapping_path=store._mapping_path,
-            vectors_path=store._vectors_path,
         )
         assert vs2.size == old_size
         query = _random_vector()

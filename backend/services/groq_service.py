@@ -2,7 +2,7 @@ import os
 import re
 import time
 from groq import Groq
-from backend.config.settings import settings
+from backend.config import settings
 from backend.middlewares.error_handler import AppError
 from backend.utils.logger import logger
 

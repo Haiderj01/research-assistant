@@ -1,6 +1,6 @@
 import logging
 import sys
-from backend.config.settings import settings
+from backend.config import settings
 
 
 def setup_logger(name: str = "research_assistant") -> logging.Logger:

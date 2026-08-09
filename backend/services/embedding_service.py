@@ -1,6 +1,6 @@
 import threading
 from sentence_transformers import SentenceTransformer
-from backend.config.settings import settings
+from backend.config import settings
 from backend.middlewares.error_handler import AppError
 from backend.utils.logger import logger
 

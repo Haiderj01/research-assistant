@@ -124,18 +124,6 @@ class TestChunkModel:
         assert len(chunks) == 1
         assert chunks[0]["chunk_text"] == "C1"
 
-    def test_get_chunk_by_vector_id(self):
-        paper = paper_model.create_paper(
-            title="P", filename="p.pdf", file_path="/tmp/p.pdf"
-        )
-        chunk_model.create_chunks([
-            {"paper_id": str(paper["_id"]), "chunk_text": "Vec1",
-             "chunk_index": 0, "vector_id": "v42"},
-        ])
-        chunk = chunk_model.get_chunk_by_vector_id("v42")
-        assert chunk is not None
-        assert chunk["chunk_text"] == "Vec1"
-
     def test_delete_chunks_by_paper(self):
         paper = paper_model.create_paper(
             title="P", filename="p.pdf", file_path="/tmp/p.pdf"

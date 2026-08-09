@@ -28,18 +28,10 @@ function getInitialTheme() {
   return "light";
 }
 
-function getInitialToken() {
-  return getStoredToken();
-}
-
-function getInitialUser() {
-  return getStoredUser();
-}
-
 const initialState = {
   theme: getInitialTheme(),
-  user: getInitialUser(),
-  token: getInitialToken(),
+  user: getStoredUser(),
+  token: getStoredToken(),
   authLoading: false,
   authError: null,
   papers: [],

@@ -1,16 +1,10 @@
-from flask import request, jsonify
-from backend.middlewares.error_handler import AppError
+from flask import jsonify
+from backend.controllers._helpers import require_json_body
 from backend.services import auth_service
 
 
 def handle_register():
-    body = request.get_json(silent=True)
-    if body is None:
-        raise AppError(
-            message="Request body must be valid JSON.",
-            status_code=400,
-            code="INVALID_JSON",
-        )
+    body = require_json_body()
 
     email = body.get("email")
     password = body.get("password")
@@ -29,13 +23,7 @@ def handle_register():
 
 
 def handle_login():
-    body = request.get_json(silent=True)
-    if body is None:
-        raise AppError(
-            message="Request body must be valid JSON.",
-            status_code=400,
-            code="INVALID_JSON",
-        )
+    body = require_json_body()
 
     email = body.get("email")
     password = body.get("password")

@@ -6,7 +6,7 @@ from backend.middlewares.error_handler import AppError
 from backend.models import paper_model, chunk_model
 from backend.services import embedding_service, groq_service
 from backend.services.vector_store_service import vector_store
-from backend.config.settings import settings
+from backend.config import settings
 from backend.utils.logger import logger
 
 GAP_RETRIEVAL_QUERY = (

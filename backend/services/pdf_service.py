@@ -1,5 +1,5 @@
 import fitz
-from backend.config.settings import settings
+from backend.config import settings
 from backend.middlewares.error_handler import AppError
 from backend.utils.logger import logger
 

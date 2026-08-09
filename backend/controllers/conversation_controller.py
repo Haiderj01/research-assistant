@@ -1,4 +1,5 @@
 from flask import request, jsonify, g
+from backend.controllers._helpers import require_json_body
 from bson import ObjectId
 from backend.middlewares.error_handler import AppError
 from backend.models import conversation_model, question_model
@@ -14,13 +15,7 @@ def rename_conversation(conversation_id: str):
 
     user_id = getattr(g, "user_id", None)
 
-    body = request.get_json(silent=True)
-    if body is None:
-        raise AppError(
-            message="Request body must be valid JSON.",
-            status_code=400,
-            code="INVALID_JSON",
-        )
+    body = require_json_body()
 
     title = (body.get("title") or "").strip()
     if not title:

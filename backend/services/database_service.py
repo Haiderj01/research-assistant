@@ -2,7 +2,7 @@ import os
 from pymongo import MongoClient, ASCENDING, DESCENDING, TEXT
 from pymongo.errors import ConnectionFailure
 import certifi
-from backend.config.settings import settings
+from backend.config import settings
 from backend.utils.logger import logger
 
 

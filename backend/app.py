@@ -1,19 +1,11 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from backend.config.settings import settings
+from backend.config import settings
 from backend.middlewares.error_handler import register_error_handlers
 from backend.services.database_service import DatabaseService
 from backend.services.vector_store_service import vector_store
 from backend.services.embedding_service import preload_model
-from backend.routes.upload_routes import upload_bp
-from backend.routes.query_routes import query_bp
-from backend.routes.paper_routes import paper_bp
-from backend.routes.history_routes import history_bp
-from backend.routes.conversation_routes import conversation_bp
-from backend.routes.summary_routes import summary_bp
-from backend.routes.comparison_routes import comparison_bp
-from backend.routes.gap_analysis_routes import gap_analysis_bp
-from backend.routes.auth_routes import auth_bp
+from backend.routes import api_bp, auth_bp
 from backend.utils.logger import logger
 
 
@@ -69,15 +61,8 @@ def create_app() -> Flask:
             },
         }), 200 if all_ok else 503
 
-    app.register_blueprint(upload_bp)
-    app.register_blueprint(query_bp)
-    app.register_blueprint(paper_bp)
-    app.register_blueprint(history_bp)
-    app.register_blueprint(summary_bp)
-    app.register_blueprint(comparison_bp)
-    app.register_blueprint(gap_analysis_bp)
-    app.register_blueprint(conversation_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(api_bp)
 
     return app
 

@@ -1,4 +1,5 @@
 from flask import request, jsonify, g
+from backend.controllers._helpers import require_json_body
 from bson import ObjectId
 from backend.middlewares.error_handler import AppError
 from backend.models import paper_model, conversation_model
@@ -7,13 +8,7 @@ from backend.services import rag_service
 
 def handle_ask():
     user_id = getattr(g, "user_id", None)
-    body = request.get_json(silent=True)
-    if body is None:
-        raise AppError(
-            message="Request body must be valid JSON.",
-            status_code=400,
-            code="INVALID_JSON",
-        )
+    body = require_json_body()
 
     question = body.get("question", "").strip()
     paper_ids = body.get("paper_ids")

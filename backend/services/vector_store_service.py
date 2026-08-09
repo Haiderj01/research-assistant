@@ -3,7 +3,7 @@ import os
 import threading
 import numpy as np
 import faiss
-from backend.config.settings import settings
+from backend.config import settings
 from backend.middlewares.error_handler import AppError
 from backend.models import chunk_model
 from backend.utils.logger import logger
@@ -17,19 +17,15 @@ class VectorStoreService:
     chunk/document identifiers (e.g., MongoDB _id strings).
     """
 
-    def __init__(self, index_path: str = None, mapping_path: str = None, vectors_path: str = None):
+    def __init__(self, index_path: str = None, mapping_path: str = None):
         self._index_path = index_path or os.path.join(
             settings.VECTOR_STORE_PATH, "index.faiss"
         )
         self._mapping_path = mapping_path or os.path.join(
             settings.VECTOR_STORE_PATH, "id_mapping.json"
         )
-        self._vectors_path = vectors_path or os.path.join(
-            settings.VECTOR_STORE_PATH, "vectors.npy"
-        )
         self._next_id: int = 0
         self._id_to_chunk: dict[int, str] = {}
-        self._vectors: dict[int, np.ndarray] = {}
         self._index: faiss.Index = None
         self._lock: threading.Lock = threading.Lock()
 
@@ -85,7 +81,6 @@ class VectorStoreService:
             self._index.add_with_ids(matrix, faiss_ids)
             for i, fid in enumerate(faiss_ids):
                 self._id_to_chunk[int(fid)] = chunk_ids[i]
-                self._vectors[int(fid)] = matrix[i]
             self._next_id += len(vectors)
 
             self._save()
@@ -179,10 +174,6 @@ class VectorStoreService:
     def remove_vectors(self, chunk_ids: list[str]) -> int:
         """Remove vectors associated with given chunk IDs.
 
-        FAISS does not support efficient deletion in all index types.
-        This implementation removes the IDs from the mapping and
-        rebuilds the index without the deleted vectors.
-
         Args:
             chunk_ids: Chunk identifiers to remove.
 
@@ -196,12 +187,11 @@ class VectorStoreService:
         if not ids_to_remove:
             return 0
 
-        for fid in ids_to_remove:
-            del self._id_to_chunk[fid]
-            self._vectors.pop(fid, None)
-
-        self._rebuild_index()
-        self._save()
+        with self._lock:
+            self._index.remove_ids(np.array(ids_to_remove, dtype=np.int64))
+            for fid in ids_to_remove:
+                del self._id_to_chunk[fid]
+            self._save()
         logger.info(f"Removed {len(ids_to_remove)} vectors from store")
         return len(ids_to_remove)
 
@@ -234,13 +224,6 @@ class VectorStoreService:
                         raw = json.load(f)
                     self._id_to_chunk = {int(k): v for k, v in raw.items()}
                     self._next_id = max(map(int, raw.keys()), default=-1) + 1
-                if os.path.exists(self._vectors_path):
-                    arr = np.load(self._vectors_path, allow_pickle=False)
-                    self._vectors = {
-                        int(fid): arr[i] for i, fid in enumerate(
-                            sorted(self._id_to_chunk.keys())
-                        )
-                    }
                 logger.info(
                     f"Loaded vector store ({self.size} vectors, "
                     f"dim={self._index.d})"
@@ -253,7 +236,6 @@ class VectorStoreService:
         self._index = faiss.IndexIDMap(faiss.IndexFlatL2(dim))
         self._next_id = 0
         self._id_to_chunk = {}
-        self._vectors = {}
         logger.info(f"Created new vector store (dim={dim})")
 
     def _save(self):
@@ -261,27 +243,6 @@ class VectorStoreService:
         faiss.write_index(self._index, self._index_path)
         with open(self._mapping_path, "w") as f:
             json.dump(self._id_to_chunk, f)
-        ids = sorted(self._vectors.keys())
-        if ids:
-            arr = np.array([self._vectors[fid] for fid in ids], dtype=np.float32)
-            np.save(self._vectors_path, arr)
-
-    def _rebuild_index(self):
-        dim = self._index.d
-
-        if not self._id_to_chunk or not self._vectors:
-            self._index = faiss.IndexIDMap(faiss.IndexFlatL2(dim))
-            self._next_id = 0
-            return
-
-        ids = sorted(self._id_to_chunk.keys())
-        vectors = [self._vectors[fid] for fid in ids]
-
-        self._index = faiss.IndexIDMap(faiss.IndexFlatL2(dim))
-        matrix = np.array(vectors, dtype=np.float32)
-        faiss_ids = np.array(ids, dtype=np.int64)
-        self._index.add_with_ids(matrix, faiss_ids)
-        self._next_id = max(ids) + 1 if ids else 0
 
 
 vector_store = VectorStoreService()

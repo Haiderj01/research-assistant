@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from bson import ObjectId
 from backend.services.database_service import DatabaseService
 
 
@@ -42,21 +41,3 @@ def get_user_by_email(email: str) -> dict | None:
     if coll is None:
         return None
     return coll.find_one({"email": email.lower()})
-
-
-def get_user_by_id(user_id: str) -> dict | None:
-    """Fetch a user by their ObjectId string.
-
-    Args:
-        user_id: The user's ``_id`` as a string.
-
-    Returns:
-        The matching user document, or None if not found / DB unavailable.
-    """
-    coll = DatabaseService.get_collection("users")
-    if coll is None:
-        return None
-    try:
-        return coll.find_one({"_id": ObjectId(user_id)})
-    except Exception:
-        return None
