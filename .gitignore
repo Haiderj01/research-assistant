@@ -18,3 +18,4 @@ venv/
 docs/
 .opencode/
 opencode.json
+.vscode/
