@@ -7,15 +7,20 @@ import ComparePage from "./pages/ComparePage";
 import HistoryPage from "./pages/HistoryPage";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
+import OAuthCallbackPage from "./pages/OAuthCallbackPage";
 import RequireAuth from "./components/RequireAuth";
+import WelcomePage from "./pages/WelcomePage";
 
 export default function App() {
   return (
     <AppProvider>
       <Routes>
+        <Route path="/welcome" element={<WelcomePage />} />
+        <Route index element={<WelcomePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
         <Route element={<AppLayout />}>
-          <Route index element={<UploadPage />} />
+          <Route path="upload" element={<UploadPage />} />
           <Route
             path="chat"
             element={

@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useAppDispatch, useAppState, useAuthActions } from "../context/AppContext";
 
 const links = [
-  { to: "/", label: "Upload", icon: "↑" },
+  { to: "/upload", label: "Upload", icon: "↑" },
   { to: "/chat", label: "Chat", icon: "💬" },
   { to: "/compare", label: "Compare", icon: "⇄" },
   { to: "/history", label: "History", icon: "📋" },

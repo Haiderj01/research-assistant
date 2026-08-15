@@ -10,9 +10,9 @@
   --text-primary: #111827;
   --text-secondary: #4b5563;
   --text-muted: #9ca3af;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-soft: #eff6ff;
+  --accent: #0f766e;
+  --accent-hover: #115e59;
+  --accent-soft: #ccfbf1;
   --success: #16a34a;
   --success-soft: #f0fdf4;
   --success-border: #bbf7d0;
@@ -38,9 +38,9 @@
   --text-primary: #f1f5f9;
   --text-secondary: #cbd5e1;
   --text-muted: #64748b;
-  --accent: #3b82f6;
-  --accent-hover: #60a5fa;
-  --accent-soft: #1e3a5f;
+  --accent: #7dd3c0;
+  --accent-hover: #9be0cf;
+  --accent-soft: #134e4a;
   --success: #4ade80;
   --success-soft: #052e16;
   --success-border: #166534;
@@ -84,4 +84,18 @@
   --color-sidebar-text: var(--sidebar-text);
   --color-sidebar-text-hover: var(--sidebar-text-hover);
   --color-sidebar-item-hover: var(--sidebar-item-hover);
+}
+
+/* Teal accent pairing matches the landing page: dark text on the accent
+   surface in dark mode (same as the landing's "Get started" button). */
+.dark .bg-accent {
+  color: #0f1420;
+}
+
+/* Serif display font for the app's main headings and sidebar wordmark,
+   matching the landing page headline. */
+h2.text-2xl,
+aside h1,
+aside .text-lg.font-bold {
+  font-family: Georgia, "Times New Roman", serif;
 }

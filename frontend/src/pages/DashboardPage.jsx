@@ -15,7 +15,7 @@ export default function DashboardPage() {
   const pending = papers.length - processed - failed;
 
   const cards = [
-    { label: "Total Papers", value: papers.length, color: "bg-blue-500" },
+    { label: "Total Papers", value: papers.length, color: "bg-accent" },
     { label: "Processed", value: processed, color: "bg-green-500" },
     { label: "Pending", value: pending, color: "bg-yellow-500" },
     { label: "Failed", value: failed, color: "bg-red-500" },

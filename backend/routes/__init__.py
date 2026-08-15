@@ -1,5 +1,11 @@
 from flask import Blueprint
-from backend.controllers.auth_controller import handle_register, handle_login
+from backend.controllers.auth_controller import (
+    handle_register,
+    handle_login,
+    handle_me,
+    handle_google_login,
+    handle_google_callback,
+)
 from backend.controllers.paper_controller import list_papers, get_paper, delete_paper
 from backend.controllers.query_controller import handle_ask
 from backend.controllers.upload_controller import handle_upload
@@ -15,6 +21,9 @@ api_bp = Blueprint("api", __name__)
 
 auth_bp.route("/api/v1/auth/register", methods=["POST"])(handle_register)
 auth_bp.route("/api/v1/auth/login", methods=["POST"])(handle_login)
+auth_bp.route("/api/v1/auth/google", methods=["GET"])(handle_google_login)
+auth_bp.route("/api/v1/auth/google/callback", methods=["GET"])(handle_google_callback)
+auth_bp.route("/api/v1/auth/me", methods=["GET"])(require_auth(handle_me))
 
 api_bp.route("/api/v1/papers", methods=["GET"])(require_auth(list_papers))
 api_bp.route("/api/v1/paper/<string:paper_id>", methods=["GET"])(require_auth(get_paper))

@@ -120,6 +120,25 @@ def _retrieve_paper_chunks(paper_id: str, top_k: int, query_vector: list[float])
     return "\n\n".join(parts)
 
 
+def _retrieve_last_chunks(paper_id: str, n: int = PER_PAPER_CHUNKS) -> str:
+    """Deterministic fallback for papers the vector search cannot surface.
+
+    Limitations/future-work sections sit near the end of most papers, so
+    grab the abstract (first chunk) plus the final chunks by chunk order
+    when the semantic retrieval came up empty for this paper.
+    ponytail: order-based heuristic; a paper with no classic IMRAD sections
+    can still miss, but it beats feeding the reduce step a placeholder.
+    """
+    chunks = chunk_model.get_chunks_by_paper(paper_id) or []
+    if not chunks:
+        return ""
+    if len(chunks) <= n:
+        selected = chunks
+    else:
+        selected = chunks[:1] + chunks[-(n - 1):]
+    return "\n\n".join(c["chunk_text"] for c in selected if c.get("chunk_text"))
+
+
 def _parse_gap_blocks(text: str) -> list[dict]:
     """Parse the reduce-step LLM output into structured gap dicts.
 
@@ -212,14 +231,15 @@ def analyze_research_gaps(paper_ids, user_id: str) -> dict:
     def _extract(idx: int) -> dict:
         paper = papers[idx]
         context = contexts[idx]
+        if not context:
+            # Landmark/theory papers rank low for the limitations query;
+            # fall back to their closing sections before giving up.
+            context = _retrieve_last_chunks(str(paper["_id"]))
         try:
             if context:
                 summary = groq_service.extract_paper_gaps(context)
             else:
-                summary = (
-                    "None stated: no content could be retrieved for this paper "
-                    "related to limitations or future work."
-                )
+                summary = "No retrievable content for gap analysis."
         except AppError:
             logger.error(f"Gap analysis map step failed for paper {paper['_id']}")
             raise
@@ -243,10 +263,17 @@ def analyze_research_gaps(paper_ids, user_id: str) -> dict:
         for future in as_completed(future_to_idx):
             per_paper_summaries[future_to_idx[future]] = future.result()
 
+    # Papers with no retrievable content must never reach the reduce step:
+    # a placeholder summary would otherwise be synthesized into a fake gap.
+    # (The API still reports them under per_paper_summaries.)
     summaries_blob = "\n\n".join(
         f"--- Paper ID: {s['paper_id']} | Title: {s['title']} ---\n{s['summary']}"
         for s in per_paper_summaries
+        if s["summary"] != "No retrievable content for gap analysis."
     )
+    if not summaries_blob:
+        logger.info("Gap analysis skipped: no paper had retrievable content")
+        return {"gaps": [], "per_paper_summaries": per_paper_summaries}
 
     try:
         analysis_text = groq_service.synthesize_research_gaps(summaries_blob)

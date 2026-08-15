@@ -140,19 +140,19 @@ class VectorStoreService:
         """Oversample, filter by paper ownership, and truncate to k results."""
         oversample_factor = settings.VECTOR_SEARCH_OVERSAMPLE_FACTOR
         max_oversample = k * settings.VECTOR_SEARCH_MAX_OVERSAMPLE_FACTOR
+        filtered = []
 
         while oversample_factor * k <= max_oversample:
             fetch_k = min(oversample_factor * k, self.size)
             distances, indices = self._index.search(matrix, fetch_k)
             results = self._format_results(distances[0], indices[0])
             if not results:
-                return []
+                break
 
             vector_ids = [r["chunk_id"] for r in results]
             chunks = chunk_model.get_chunks_by_vector_ids(vector_ids)
             chunks_by_id = {c["vector_id"]: c for c in (chunks or [])}
 
-            filtered = []
             for r in results:
                 chunk = chunks_by_id.get(r["chunk_id"])
                 if chunk and str(chunk.get("paper_id")) in paper_ids:
@@ -161,11 +161,11 @@ class VectorStoreService:
                     break
 
             if len(filtered) >= k or fetch_k >= self.size:
-                return filtered[:k]
+                break
 
             oversample_factor *= 2
 
-        return []
+        return filtered[:k]
 
     def list_chunk_ids(self) -> set[str]:
         """Return the set of all chunk IDs currently in the store."""

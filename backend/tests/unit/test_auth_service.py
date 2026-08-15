@@ -190,3 +190,61 @@ class TestToken:
         with pytest.raises(AppError) as exc:
             auth_service.verify_token("")
         assert exc.value.status_code == 401
+
+
+class TestGoogleOAuth:
+    def test_google_new_user_creates_google_account(self, mock_deps):
+        mock_deps["user_model"].get_user_by_email.return_value = None
+        mock_deps["user_model"].create_user.return_value = _user(email="ada@example.com", name="Ada Lovelace")
+
+        result = auth_service.login_or_register_google({"email": "ada@example.com", "name": "Ada Lovelace"})
+
+        assert result["created"] is True
+        assert result["user"]["email"] == "ada@example.com"
+        assert result["user"]["name"] == "Ada Lovelace"
+        assert "token" in result
+        mock_deps["user_model"].create_user.assert_called_once_with(
+            "ada@example.com", None, "Ada Lovelace", auth_provider="google"
+        )
+
+    def test_google_existing_email_logs_into_same_account(self, mock_deps):
+        existing = _user(email="ada@example.com", name="Ada")
+        mock_deps["user_model"].get_user_by_email.return_value = existing
+
+        result = auth_service.login_or_register_google({"email": "ada@example.com", "name": "Ada Lovelace"})
+
+        assert result["created"] is False
+        assert result["user"]["id"] == "507f1f77bcf86cd799439011"
+        assert result["user"]["email"] == "ada@example.com"
+        mock_deps["user_model"].create_user.assert_not_called()
+
+    def test_google_user_cannot_password_login(self, mock_deps):
+        google_user = _user(email="ada@example.com")
+        google_user["password_hash"] = None
+        mock_deps["user_model"].get_user_by_email.return_value = google_user
+
+        with pytest.raises(AppError) as exc:
+            auth_service.login_user("ada@example.com", "anything123")
+        assert exc.value.status_code == 401
+        assert exc.value.code == "INVALID_CREDENTIALS"
+        mock_deps["bcrypt"].checkpw.assert_not_called()
+
+    def test_google_auth_url_contains_required_params(self):
+        url = auth_service.google_auth_url("http://localhost:5003/api/v1/auth/google/callback")
+
+        assert url.startswith(auth_service.GOOGLE_AUTH_ENDPOINT + "?")
+        assert "client_id=" in url
+        assert "redirect_uri=http%3A%2F%2Flocalhost%3A5003%2Fapi%2Fv1%2Fauth%2Fgoogle%2Fcallback" in url
+        assert "response_type=code" in url
+        assert "scope=openid+email+profile" in url
+        assert "state=" in url
+
+    def test_oauth_state_roundtrip(self):
+        state = auth_service._oauth_state()
+        auth_service.verify_oauth_state(state)  # should not raise
+
+    def test_oauth_state_rejects_garbage(self):
+        with pytest.raises(AppError) as exc:
+            auth_service.verify_oauth_state("not-a-real-state")
+        assert exc.value.status_code == 400
+        assert exc.value.code == "INVALID_OAUTH_STATE"

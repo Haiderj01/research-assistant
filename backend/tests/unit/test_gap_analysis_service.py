@@ -155,3 +155,56 @@ class TestGapAnalysisService:
         )
         result = gap_analysis_service.analyze_research_gaps(VALID_IDS, "user_1")
         assert result["gaps"] == []
+
+
+class TestEmptyRetrievalFallback:
+    def _papers_with_outcomes(self, mock_deps):
+        def get_paper_side_effect(pid, user_id=None):
+            return {"_id": pid, "title": f"Paper {pid[-4:]}", "status": "processed"}
+        mock_deps["paper"].get_paper.side_effect = get_paper_side_effect
+
+    def test_empty_vector_retrieval_uses_last_chunks(self, mock_deps):
+        self._papers_with_outcomes(mock_deps)
+        mock_deps["vector_store"].search.return_value = []  # retrieval finds nothing
+        mock_deps["chunks"].get_chunks_by_paper.return_value = [
+            {"chunk_text": f"chunk {i}"} for i in range(8)
+        ]
+        mock_deps["groq"].extract_paper_gaps.side_effect = ["Summary A.", "Summary B."]
+
+        result = gap_analysis_service.analyze_research_gaps(VALID_IDS, "user_1")
+
+        calls = mock_deps["groq"].extract_paper_gaps.call_args_list
+        assert len(calls) == 2
+        fallback_text = calls[0].args[0]
+        assert "chunk 0" in fallback_text  # abstract
+        assert "chunk 7" in fallback_text  # closing sections
+        assert "No retrievable content" not in fallback_text
+
+    def test_paper_with_no_chunks_excluded_from_reduce(self, mock_deps):
+        self._papers_with_outcomes(mock_deps)
+        mock_deps["vector_store"].search.return_value = []  # retrieval finds nothing
+        mock_deps["chunks"].get_chunks_by_paper.side_effect = [
+            [{"chunk_text": "closing remarks of paper A"}],  # has content
+            [],  # paper B has no chunks at all
+        ]
+        mock_deps["groq"].extract_paper_gaps.side_effect = ["Real summary A.", "No retrievable content for gap analysis."]
+
+        result = gap_analysis_service.analyze_research_gaps(VALID_IDS, "user_1")
+
+        blob = mock_deps["groq"].synthesize_research_gaps.call_args.args[0]
+        assert VALID_IDS[0] in blob
+        assert VALID_IDS[1] not in blob  # unretrievable paper never reaches reduce
+        assert "No retrievable content" not in blob
+        assert len(result["per_paper_summaries"]) == 2  # still reported to API
+
+    def test_all_papers_empty_returns_no_gaps(self, mock_deps):
+        self._papers_with_outcomes(mock_deps)
+        mock_deps["vector_store"].search.return_value = []
+        mock_deps["chunks"].get_chunks_by_paper.return_value = []
+        mock_deps["groq"].extract_paper_gaps.side_effect = ["Summary A.", "Summary B."]
+
+        result = gap_analysis_service.analyze_research_gaps(VALID_IDS, "user_1")
+
+        assert result["gaps"] == []
+        assert result["per_paper_summaries"][0]["summary"] == "No retrievable content for gap analysis."
+        mock_deps["groq"].synthesize_research_gaps.assert_not_called()
