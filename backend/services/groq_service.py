@@ -101,6 +101,14 @@ def _generate(prompt: str, system_instruction: str | None = None) -> str:
 
             content = response.choices[0].message.content
             if not content:
+                if attempt < _MAX_ATTEMPTS - 1:
+                    delay = 2 ** attempt * 5
+                    logger.warning(
+                        f"LLM empty response, retrying in {delay:.0f}s "
+                        f"(attempt {attempt + 1}/{_MAX_ATTEMPTS})"
+                    )
+                    time.sleep(delay)
+                    continue
                 raise AppError(
                     message="LLM returned an empty response.",
                     status_code=502,

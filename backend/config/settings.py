@@ -15,6 +15,11 @@ def _resolve_path(env_key: str, default: str) -> str:
 
 GROQ_API_KEY: str | None = os.getenv("GROQ_API_KEY")
 GROQ_MODEL_NAME: str = os.getenv("GROQ_MODEL_NAME", "llama-3.3-70b-versatile")
+GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL_NAME: str = os.getenv(
+    "GEMINI_MODEL_NAME",
+    "gemini-3.6-flash",
+)
 JWT_SECRET_KEY: str | None = os.getenv("JWT_SECRET_KEY")
 GOOGLE_CLIENT_ID: str | None = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET: str | None = os.getenv("GOOGLE_CLIENT_SECRET")

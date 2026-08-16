@@ -9,10 +9,16 @@ export function askQuestion(question, paperIds, conversationId) {
 }
 
 export function summarizePaper(paperId, forceRegenerate = false) {
-  return client.post("/summarize", {
-    paper_id: paperId,
-    force_regenerate: forceRegenerate,
-  });
+  return client.post(
+    "/summarize",
+    {
+      paper_id: paperId,
+      force_regenerate: forceRegenerate,
+    },
+    // Large papers summarize in multiple paced batches and can take
+    // several minutes; the default 5-minute client timeout would abort.
+    { timeout: 1200000 }
+  );
 }
 
 export function comparePapers(paperIds, dimensions) {

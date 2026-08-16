@@ -11,6 +11,7 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [summarizeTarget, setSummarizeTarget] = useState(null);
+  const [summarizingId, setSummarizingId] = useState(null);
   const { papers, token } = useAppState();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -54,6 +55,8 @@ export default function UploadPage() {
     [token, dispatch, navigate],
   );
 
+  const handleSummarizeDone = useCallback(() => setSummarizingId(null), []);
+
   return (
     <div className="max-w-3xl mx-auto">
       <h2 className="text-2xl font-bold text-primary mb-6">Upload Papers</h2>
@@ -76,7 +79,12 @@ export default function UploadPage() {
               <PaperCard
                 key={p.id}
                 paper={p}
-                onSummarize={(id, title) => setSummarizeTarget({ id, title })}
+                summarizing={summarizingId === p.id}
+                onSummarize={(id, title) => {
+                  if (summarizingId) return; // one summary in flight at a time
+                  setSummarizingId(id);
+                  setSummarizeTarget({ id, title });
+                }}
                 onDelete={async (id) => {
                   try {
                     await deletePaper(id);
@@ -95,6 +103,7 @@ export default function UploadPage() {
           paperId={summarizeTarget.id}
           paperTitle={summarizeTarget.title}
           onClose={() => setSummarizeTarget(null)}
+          onDone={handleSummarizeDone}
         />
       )}
     </div>

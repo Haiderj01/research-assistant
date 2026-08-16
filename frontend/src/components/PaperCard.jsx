@@ -1,4 +1,4 @@
-export default function PaperCard({ paper, onDelete, onSummarize }) {
+export default function PaperCard({ paper, onDelete, onSummarize, summarizing = false }) {
   return (
     <div className="border border-border rounded-xl p-4 bg-surface shadow-sm hover:shadow transition-shadow">
       <div className="flex items-start justify-between">
@@ -34,9 +34,15 @@ export default function PaperCard({ paper, onDelete, onSummarize }) {
         {paper.status === "processed" && onSummarize && (
           <button
             onClick={() => onSummarize(paper.id, paper.title)}
-            className="text-xs font-medium text-accent hover:text-accent-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded"
+            disabled={summarizing}
+            className={`text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded ${
+              summarizing
+                ? "text-muted cursor-not-allowed"
+                : "text-accent hover:text-accent-hover transition-colors"
+            }`}
+            title={summarizing ? "Summary is already being generated" : undefined}
           >
-            Summarize
+            {summarizing ? "Summarizing…" : "Summarize"}
           </button>
         )}
         {onDelete && (

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { summarizePaper } from "../api/queries";
 import LoadingSpinner from "./LoadingSpinner";
 
-export default function SummarizeModal({ paperId, paperTitle, onClose }) {
+export default function SummarizeModal({ paperId, paperTitle, onClose, onDone }) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,9 +14,12 @@ export default function SummarizeModal({ paperId, paperTitle, onClose }) {
     summarizePaper(paperId)
       .then((res) => { if (!cancelled) setSummary(res.data.summary); })
       .catch((err) => { if (!cancelled) setError(err.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+        if (typeof onDone === "function") onDone();
+      });
     return () => { cancelled = true; };
-  }, [paperId]);
+  }, [paperId, onDone]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
@@ -35,7 +38,9 @@ export default function SummarizeModal({ paperId, paperTitle, onClose }) {
           </button>
         </div>
         <div className="px-5 py-4 overflow-y-auto flex-1">
-          {loading && <LoadingSpinner size="sm" text="Generating summary..." />}
+          {loading && (
+            <LoadingSpinner size="sm" text="Summarizing..." />
+          )}
           {error && <p className="text-sm text-danger">{error}</p>}
           {summary && <p className="text-sm text-primary whitespace-pre-line leading-relaxed">{summary}</p>}
         </div>

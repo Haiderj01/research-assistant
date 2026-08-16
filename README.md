@@ -20,7 +20,7 @@ A RAG-based research paper Q&A system. Upload PDFs, ask questions, get summaries
 | Database | MongoDB / Atlas |
 | Vector Store | FAISS |
 | Embeddings | Sentence Transformers (all-MiniLM-L6-v2) |
-| LLM | Groq (openai/gpt-oss-120b) |
+| LLM | Groq (openai/gpt-oss-120b) for chat/compare/gap analysis; Google Gemini (gemini-3.6-flash) for summaries |
 | PDF | PyMuPDF |
 
 ## Quick Start
@@ -29,7 +29,8 @@ A RAG-based research paper Q&A system. Upload PDFs, ask questions, get summaries
 
 - Python 3.12+
 - Node.js 22+
-- A [Groq API key](https://console.groq.com/keys)
+- A [Groq API key](https://console.groq.com/keys) (chat / compare / gap analysis)
+- A [Gemini API key](https://aistudio.google.com/apikey) (summaries)
 
 ### 1. Clone & configure
 
@@ -67,11 +68,13 @@ Set these in `.env` at the project root:
 | Variable | Description |
 |---|---|
 | `GROQ_API_KEY` | **Required.** Groq API key (free tier) |
+| `GEMINI_API_KEY` | **Required for summaries.** Google Gemini API key |
 | `DATABASE_URL` | **Required.** MongoDB / Atlas connection string |
 | `JWT_SECRET_KEY` | **Required.** Secret used to sign auth tokens |
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID (only needed for Google Sign-In) |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret (only needed for Google Sign-In) |
 | `GROQ_MODEL_NAME` | Groq model (defaults to `openai/gpt-oss-120b`) |
+| `GEMINI_MODEL_NAME` | Gemini model used for summaries (defaults to `gemini-3.6-flash`) |
 | `APPLICATION_PORT` | Backend port (defaults to `5003`) |
 
 ## API
