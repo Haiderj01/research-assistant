@@ -275,6 +275,14 @@ def analyze_research_gaps(paper_ids, user_id: str) -> dict:
         logger.info("Gap analysis skipped: no paper had retrievable content")
         return {"gaps": [], "per_paper_summaries": per_paper_summaries}
 
+    # Keep reduce input under Groq TPM 8000 (input+output+template)
+    _CHARS_PER_TOKEN = 3.5
+    _REDUCE_TOKEN_BUDGET = 5000
+    _REDUCE_CHAR_BUDGET = int(_REDUCE_TOKEN_BUDGET * _CHARS_PER_TOKEN)
+    if len(summaries_blob) > _REDUCE_CHAR_BUDGET:
+        logger.warning(f"Truncating gap reduce input from {len(summaries_blob)} to {_REDUCE_CHAR_BUDGET} chars to fit TPM")
+        summaries_blob = summaries_blob[:_REDUCE_CHAR_BUDGET]
+
     try:
         analysis_text = groq_service.synthesize_research_gaps(summaries_blob)
     except AppError:

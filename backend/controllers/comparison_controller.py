@@ -8,13 +8,19 @@ from backend.config import settings
 
 
 def _paper_context_budget(num_papers: int) -> int:
-    """Per-paper char budget so all papers fit under the LLM input cap.
+    """Per-paper char budget so all papers fit under Groq's TPM (8000).
 
-    Reserves a fixed allowance for the prompt template and header text,
-    then splits the remaining input budget evenly across the papers.
+    Groq counts input+output+template toward TPM. Use a 5000-token total
+    budget (≈17500 chars) so per-call tokens stay under 8000 after adding
+    output (2048) + template overhead.
     """
-    template_allowance = 2000
-    return max(1, (settings.MAX_LLM_INPUT_CHARS - template_allowance) // num_papers)
+    _CHARS_PER_TOKEN = 3.5
+    _TOTAL_TOKEN_BUDGET = 5000
+    _OUTPUT_ALLOWANCE = 2048
+    _TEMPLATE_OVERHEAD = 200
+    # total input tokens split across papers
+    per_paper_tokens = max(1, _TOTAL_TOKEN_BUDGET // num_papers)
+    return int(per_paper_tokens * _CHARS_PER_TOKEN)
 
 
 def _truncate_text(text: str, limit: int) -> str:
